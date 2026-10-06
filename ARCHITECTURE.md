@@ -73,6 +73,28 @@ plan's numbers were needed:
    - **Earth at +1 yr:** Error dropped from $980\text{ km}$ to $109\text{ km}$ ($9\times$ improvement).
    - **Mars at +1 yr:** Error dropped from $145\text{ km}$ to $1\text{ km}$ ($145\times$ improvement).
 
+## Phase 4: Planets as Real Physical Spheres
+- **Cartographic Orientation (`src/physics/orientation.ts`):** IAU WGCCRE 2015 rotational models ($\alpha_0, \delta_0, W_0, \dot{W}$).
+- **Oblate Geometry & Scales:** Oblate spheroids ($1 - \text{flattening}$ along polar axis), procedural and equirectangular rings.
+- **Validation:** Earth subsolar point at 2026-10-06 12:00 UTC verified ($\text{lat} = -5.04^\circ$, $\text{lon} = -3.05^\circ$), axial tilts and sidereal periods accurate across all 8 planets.
+
+## Phase 5: Hierarchical Multi-Rate Moon Systems
+- **Core Principle:** The Web Worker owns the simulation. `compose(level0, slots, global)` is the **only** hierarchy-aware code in the system.
+- **Downstream Flat Interface:** Everything downstream—history buffers, reference frames, orbit trails, Three.js renderer, and diagnostic readouts—sees a single, flat, composed `SystemState`.
+- **Multi-Rate Scheme:** Level 0 steps system barycenters with Yoshida-6 ($dt = 0.5 - 1.0\text{ d}$); Level 1 sub-cycles local planet-moon systems with Yoshida-4, planetary $J_2$, and differential external tidal forces ($dt \le P_{\min}/100$).
+- **Validation:**
+  - Hierarchical multi-rate matches brute-force flat N-body to $4.64 \times 10^{-6}\text{ AU}$ ($693\text{ km}$) after 2 years; halving Level 0 $dt$ drops error by $150\times$, confirming $> 4$th order convergence.
+  - All 16 table-tested moon periods match published values to within $0.000\% - 0.120\%$ (well under the $0.3\%$ tolerance).
+  - Jupiter's Galilean moons hold the Laplace resonance $\phi = \lambda_1 - 3\lambda_2 + 2\lambda_3 \approx 180^\circ$ (maximum deviation $1.407^\circ$ over 20 years with Jupiter $J_2$, degrading to $36.511^\circ$ without $J_2$).
+
+## Phase 6: Extended Astronomy & Dynamics
+- **Massless Particles (`src/physics/forces/gravity.ts`):** `nMassive` boundary separates massive gravitating bodies from test particles. `particleGravity` evaluates massive $\to$ particle acceleration in $O(N_{\text{massive}} \times N_{\text{particles}})$. Test particle placed on Earth tracks Earth to $1.02 \times 10^{-13}\text{ AU}$ after 5 years, and massive bodies remain bit-identical.
+- **Pluto-Charon Binary System (`src/data/bodies/pluto.json`, `src/data/moons/charon.json`):** System barycenter lies $2,128.1\text{ km}$ from Pluto's center, well outside Pluto's physical surface ($1,188.3\text{ km}$ radius). Charon orbital period is $6.367\text{ days}$.
+- **Celestial Coordinates & Real Stars (`tests/stars.test.ts`):** Polaris ecliptic latitude measures $66.10^\circ$; Galactic Center direction $\text{GALACTIC\_AXES\_IN\_SIM}[0]$ matches Sagittarius A* to within $0.072^\circ$.
+- **Curved Galactic Orbit (`src/physics/galacticPotential.ts`):** Miyamoto-Nagai bulge and disk combined with calibrated logarithmic dark matter halo ($v_c(R_0) = 220\text{ km/s}$). Sun's azimuthal period is $244.9\text{ Myr}$; vertical oscillation period is $92.8\text{ Myr}$ with amplitude $111.1\text{ pc}$. Energy is conserved to $2.46 \times 10^{-8}$ over 500 Myr.
+- **Eclipse Prediction (`src/sim/eclipses.ts`):** Hermite cubic interpolation between composed states detects the 2026-08-12 total solar eclipse with a timing error of only **2.35 minutes** from NASA's catalogued greatest eclipse (geocentric minimum separation $0.891^\circ$).
+- **Performance Benchmark (`scripts/bench.ts`):** Measures single-threaded JavaScript throughput over all 32 solar system bodies (10 level-0 systems + 7 hierarchical moon systems, 21 moons).
+
 ## Key references
 
 - Park et al. 2021, AJ 161:105 — DE440/441 ephemeris (cite for all GM/ICs).
@@ -86,4 +108,6 @@ plan's numbers were needed:
 - Abbot et al. 2023, ApJ 944:190 — Mercury instability stats + minimal GR recipe.
 - Charlot et al. 2020, A&A 644:A159 — ICRF3 frame definition.
 - Archinal et al. 2018, Cel. Mech. Dyn. Ast. 130:22 — IAU Working Group cartographic coordinates and rotational elements.
+- Bovy 2015, ApJS 216:29 — MWPotential2014 galactic potential models.
 - Kaib & Raymond 2025, Icarus — field stars + Galactic tide budget.
+

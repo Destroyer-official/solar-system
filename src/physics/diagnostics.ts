@@ -9,7 +9,8 @@ export function centerOfMass(s: SystemState) {
     vx = 0,
     vy = 0,
     vz = 0;
-  for (let i = 0; i < s.n; i++) {
+  const nm = s.nMassive ?? s.n;
+  for (let i = 0; i < nm; i++) {
     const g = s.gm[i]!;
     m += g;
     x += g * s.pos[3 * i]!;
@@ -22,13 +23,14 @@ export function centerOfMass(s: SystemState) {
   return { pos: [x / m, y / m, z / m] as const, vel: [vx / m, vy / m, vz / m] as const };
 }
 
-/** Energy per unit G (uses GM as mass). Newtonian only. */
+/** Energy per unit G (uses GM as mass). Newtonian only. Only massive bodies. */
 export function totalEnergy(s: SystemState): number {
   let e = 0;
-  for (let i = 0; i < s.n; i++) {
+  const nm = s.nMassive ?? s.n;
+  for (let i = 0; i < nm; i++) {
     const v2 = s.vel[3 * i]! ** 2 + s.vel[3 * i + 1]! ** 2 + s.vel[3 * i + 2]! ** 2;
     e += 0.5 * s.gm[i]! * v2;
-    for (let j = i + 1; j < s.n; j++) {
+    for (let j = i + 1; j < nm; j++) {
       const r = Math.hypot(
         s.pos[3 * i]! - s.pos[3 * j]!,
         s.pos[3 * i + 1]! - s.pos[3 * j + 1]!,
@@ -42,7 +44,8 @@ export function totalEnergy(s: SystemState): number {
 
 export function angularMomentum(s: SystemState): [number, number, number] {
   const L: [number, number, number] = [0, 0, 0];
-  for (let i = 0; i < s.n; i++) {
+  const nm = s.nMassive ?? s.n;
+  for (let i = 0; i < nm; i++) {
     const c = cross(
       s.pos[3 * i]!,
       s.pos[3 * i + 1]!,

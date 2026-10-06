@@ -1,0 +1,23 @@
+{
+  "id": "charon",
+  "name": "Charon",
+  "parent": "pluto",
+  "gmKm3S2": 106.1,
+  "radiusKm": 606.0,
+  "color": "#aaaaaa",
+  "initial": {
+    "type": "vectors",
+    "about": "parent",
+    "epochJd": 2461319.5,
+    "position": [
+      -5.677238836973467e-5,
+      1.154030196798781e-5,
+      1.174841956447819e-4
+    ],
+    "velocity": [
+      7.649918668401298e-5,
+      1.00080362782565e-4,
+      2.711339239261147e-5
+    ]
+  }
+}

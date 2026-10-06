@@ -15,9 +15,15 @@ const moonFiles = import.meta.glob<BodyJson>('/src/data/moons/*.json', {
   import: 'default',
 });
 
+const dwarfFiles = import.meta.glob<BodyJson>('/src/data/dwarf-planets/*.json', {
+  eager: true,
+  import: 'default',
+});
+
 export const PLANET_BODIES: BodyJson[] = Object.values(bodyFiles);
 export const MOON_BODIES: BodyJson[] = Object.values(moonFiles);
-export const ALL_BODIES: BodyJson[] = [...PLANET_BODIES, ...MOON_BODIES];
+export const DWARF_BODIES: BodyJson[] = Object.values(dwarfFiles);
+export const ALL_BODIES: BodyJson[] = [...PLANET_BODIES, ...DWARF_BODIES, ...MOON_BODIES];
 
 const physicalFiles = import.meta.glob<PhysicalJson>('/src/data/physical/*.json', {
   eager: true,
