@@ -40,4 +40,36 @@ export const PRESETS: Record<string, Preset> = {
     dist: 0.03,
     trailDays: 7305,
   },
+  earth: {
+    label: 'Visit Earth',
+    frame: 'body:earth',
+    focus: 'earth',
+    dir: [0, -0.8, 0.5],
+    dist: 0.0004, // ~60,000 km
+    trailDays: 365.25,
+  },
+  mars: {
+    label: 'Visit Mars',
+    frame: 'body:mars',
+    focus: 'mars',
+    dir: [0, -0.8, 0.5],
+    dist: 0.00025, // ~37,000 km
+    trailDays: 686.98,
+  },
+  jupiter: {
+    label: 'Visit Jupiter',
+    frame: 'body:jupiter',
+    focus: 'jupiter',
+    dir: [0, -0.8, 0.5],
+    dist: 0.0035, // ~520,000 km
+    trailDays: 4332.59,
+  },
+  saturn: {
+    label: 'Visit Saturn',
+    frame: 'body:saturn',
+    focus: 'saturn',
+    dir: [0, -0.7, 0.6],
+    dist: 0.0055, // ~820,000 km (spectacular angle of rings)
+    trailDays: 10759.22,
+  },
 };
