@@ -10,10 +10,16 @@ import { buildTracks } from '@/sim/track';
 import { BodyVisual, type ScaleMode } from './bodyVisual';
 import { createStarfield } from './starfield';
 import { Trail } from './trail';
+import { GalaxyVisual } from './galaxyVisual';
+import type { GalacticOrbitState } from '@/physics/galacticPotential';
 
 const MIN_PIXEL_RADIUS = 4;
 
 export interface ViewState {
+  mode?: 'solar' | 'galaxy';
+  galaxyState?: GalacticOrbitState;
+  galaxyCamera?: string;
+  galaxyZExag?: number;
   frame: ReferenceFrame;
   focus: number; // body index, -1 = barycenter
   trails: boolean;
@@ -115,12 +121,42 @@ export function createViewer(
   bary.frustumCulled = false;
   scene.add(bary);
 
+  // Galaxy visual
+  const galaxyVisual = new GalaxyVisual();
+  scene.add(galaxyVisual.group);
+
   function setView(dir: readonly [number, number, number], distanceAu: number): void {
     camera.position.set(dir[0], dir[1], dir[2]).setLength(distanceAu);
     controls.target.set(0, 0, 0);
     controls.update();
   }
   setView([0, -0.8, 0.6], 35);
+
+  function setGalaxyOrbitPath(path: Float32Array): void {
+    galaxyVisual.setOrbitPath(path);
+  }
+
+  function setGalaxyView(viewType: string, state?: GalacticOrbitState, zExag = 1): void {
+    if (viewType === 'face-on') {
+      camera.position.set(0, 0.01, 32);
+      controls.target.set(0, 0, 0);
+    } else if (viewType === 'edge-on') {
+      camera.position.set(0, -28, 0);
+      controls.target.set(0, 0, 0);
+    } else if (viewType === 'follow-sun' && state) {
+      const gz = state.z * zExag;
+      controls.target.set(state.x, state.y, gz);
+      camera.position.set(state.x + 1.2, state.y - 2.2, gz + 1.0);
+    } else if (viewType === 'sgra') {
+      camera.position.set(0, -3.5, 1.2);
+      controls.target.set(0, 0, 0);
+    } else {
+      // perspective
+      camera.position.set(-14, -20, 15);
+      controls.target.set(0, 0, 0);
+    }
+    controls.update();
+  }
 
   let height = 1;
   const resize = () => {
@@ -140,6 +176,31 @@ export function createViewer(
     w = [0, 0, 0];
 
   function render(s: SystemState, v: ViewState): void {
+    const isGalaxy = v.mode === 'galaxy';
+    galaxyVisual.setVisible(isGalaxy);
+
+    if (isGalaxy) {
+      for (const vis of visuals) vis.group.visible = false;
+      for (const t of trails) t.line.visible = false;
+      bary.visible = false;
+      sunLight.visible = false;
+
+      if (v.galaxyZExag !== undefined) {
+        galaxyVisual.setVerticalExaggeration(v.galaxyZExag);
+      }
+      if (v.galaxyState) {
+        galaxyVisual.update(v.galaxyState);
+        if (v.galaxyCamera === 'follow-sun') {
+          const gz = v.galaxyState.z * (v.galaxyZExag ?? 1);
+          controls.target.set(v.galaxyState.x, v.galaxyState.y, gz);
+        }
+      }
+      controls.update();
+      renderer.render(scene, camera);
+      return;
+    }
+
+    sunLight.visible = true;
     const ax = v.frame.axes;
     v.frame.origin(s.t, s.gm, s.pos, 0, o);
 
@@ -203,5 +264,5 @@ export function createViewer(
     renderer.render(scene, camera);
   }
 
-  return { render, setView };
+  return { render, setView, setGalaxyView, setGalaxyOrbitPath };
 }

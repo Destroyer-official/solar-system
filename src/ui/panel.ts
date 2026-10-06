@@ -1,7 +1,8 @@
 import { AU_KM } from '@/data/constants';
 import type { BodyRow } from '@/sim/readout';
-import type { AppStore, ScaleMode } from '@/sim/store';
+import type { AppStore, ScaleMode, GalaxyCamera } from '@/sim/store';
 import type { ComputedFacts } from '@/sim/facts';
+import type { GalaxyReadout } from '@/sim/galaxySim';
 
 export interface Option {
   id: string;
@@ -16,6 +17,8 @@ export interface PanelContext {
   onReset(): void;
   onSeekDate(d: Date): void;
   onNow(): void;
+  onGalaxyReset?(): void;
+  onGalaxyCamera?(cam: GalaxyCamera): void;
   onPhysicsChange?(opts: {
     integrator?: 'leapfrog' | 'yoshida4';
     relativity?: boolean;
@@ -32,6 +35,7 @@ export interface PanelData {
   rows: BodyRow[];
   busy: boolean;
   selectedFacts?: ComputedFacts | null;
+  galaxyReadout?: GalaxyReadout | null;
 }
 
 const fill = (sel: HTMLSelectElement, opts: Option[]) =>
@@ -40,50 +44,108 @@ const fill = (sel: HTMLSelectElement, opts: Option[]) =>
 export function createPanel(root: HTMLElement, store: AppStore, ctx: PanelContext) {
   root.innerHTML = `
     <div class="panel">
-      <h1>Solar System</h1>
-      <div class="row"><button id="play"></button><button id="rev"></button><button id="reset">Reset</button></div>
-      <label>Speed <input id="speed" type="range" min="-1" max="4.5" step="0.01" value="2"> <span id="speedLabel"></span></label>
-      <div class="row">
-        <input id="date" type="date"><button id="go">Go</button><button id="now">Now</button>
+      <div class="panel-header">
+        <h1>Celestial Dynamics</h1>
       </div>
-      <div class="row" id="presets"></div>
-      <label>Frame <select id="frame"></select></label>
-      <label>Camera follows <select id="focus"></select></label>
-      <label>Scale mode
-        <select id="scaleMode">
-          <option value="pixels" selected>Minimum Pixel Radius</option>
-          <option value="true">True Physical Scale</option>
-          <option value="exaggerated">Exaggerated Scale</option>
-        </select>
-      </label>
-      <label id="exagRow" style="display:none;">Exaggeration
-        <input id="scaleExag" type="range" min="1" max="300" step="1" value="20">
-        <span id="exagVal">20x</span>
-      </label>
-      <label>Integrator
-        <select id="integrator">
-          <option value="yoshida4" selected>Yoshida 4th Order</option>
-          <option value="leapfrog">Leapfrog (2nd)</option>
-        </select>
-      </label>
-      <div class="row">
-        <label><input id="relativity" type="checkbox" checked> 1PN Relativity</label>
-        <label><input id="quadrupole" type="checkbox" checked> Solar J2</label>
+
+      <div class="mode-tabs">
+        <button id="modeSolar" class="tab-btn active">Planets View</button>
+        <button id="modeGalaxy" class="tab-btn">Milky Way Galaxy</button>
       </div>
-      <label>Trail length
-        <select id="trailDays">
-          <option value="365.25">1 year</option><option value="730.5">2 years</option>
-          <option value="4383">12 years</option><option value="7305">20 years</option>
-          <option value="18262.5">50 years</option><option value="36525">100 years</option>
-        </select>
-      </label>
-      <label><input id="trails" type="checkbox" checked> Trails</label>
-      <label>Along-track compression <input id="compress" type="range" min="-2" max="0" step="0.05" value="0"> <span id="cLabel">1:1</span></label>
-      <div id="factsBox" class="facts-box" style="display:none;"></div>
-      <pre id="readout"></pre>
+
+      <!-- Solar System View Controls -->
+      <div id="solarSection" style="display: grid; gap: 8px;">
+        <div class="row">
+          <button id="play"></button>
+          <button id="rev"></button>
+          <button id="reset">Reset</button>
+        </div>
+        <label>Speed <input id="speed" type="range" min="-1" max="4.5" step="0.01" value="2"> <span id="speedLabel"></span></label>
+        <div class="row">
+          <input id="date" type="date"><button id="go">Go</button><button id="now">Now</button>
+        </div>
+        <div class="row" id="presets"></div>
+        <label>Frame <select id="frame"></select></label>
+        <label>Camera follows <select id="focus"></select></label>
+        <label>Scale mode
+          <select id="scaleMode">
+            <option value="pixels" selected>Minimum Pixel Radius</option>
+            <option value="true">True Physical Scale</option>
+            <option value="exaggerated">Exaggerated Scale</option>
+          </select>
+        </label>
+        <label id="exagRow" style="display:none;">Exaggeration
+          <input id="scaleExag" type="range" min="1" max="300" step="1" value="20">
+          <span id="exagVal">20x</span>
+        </label>
+        <label>Integrator
+          <select id="integrator">
+            <option value="yoshida4" selected>Yoshida 4th Order</option>
+            <option value="leapfrog">Leapfrog (2nd)</option>
+          </select>
+        </label>
+        <div class="row">
+          <label><input id="relativity" type="checkbox" checked> 1PN Relativity</label>
+          <label><input id="quadrupole" type="checkbox" checked> Solar J2</label>
+        </div>
+        <label>Trail length
+          <select id="trailDays">
+            <option value="365.25">1 year</option><option value="730.5">2 years</option>
+            <option value="4383">12 years</option><option value="7305">20 years</option>
+            <option value="18262.5">50 years</option><option value="36525">100 years</option>
+          </select>
+        </label>
+        <label><input id="trails" type="checkbox" checked> Trails</label>
+        <label>Along-track compression <input id="compress" type="range" min="-2" max="0" step="0.05" value="0"> <span id="cLabel">1:1</span></label>
+        <div id="factsBox" class="facts-box" style="display:none;"></div>
+        <pre id="readout"></pre>
+      </div>
+
+      <!-- Milky Way Galaxy View Controls -->
+      <div id="galaxySection" style="display: none; grid-gap: 8px;">
+        <div class="row">
+          <button id="galPlay">Play</button>
+          <button id="galRev">Forward</button>
+          <button id="galReset">Reset</button>
+        </div>
+        <label>Galactic Time Speed
+          <input id="galSpeed" type="range" min="0.1" max="15" step="0.1" value="2">
+          <span id="galSpeedLabel">2.0 Myr/s</span>
+        </label>
+        <label>Camera View
+          <select id="galCamera">
+            <option value="perspective" selected>3D Perspective</option>
+            <option value="face-on">Face-on (Galactic North)</option>
+            <option value="edge-on">Edge-on (Vertical Bobbing)</option>
+            <option value="follow-sun">Follow Sun (Local System)</option>
+            <option value="sgra">Sagittarius A* (Core Black Hole)</option>
+          </select>
+        </label>
+        <label>Vertical Exaggeration
+          <input id="galZExag" type="range" min="1" max="5" step="0.1" value="1">
+          <span id="galZExagVal">1.0x (True Scale)</span>
+        </label>
+
+        <div class="galaxy-info">
+          <div><strong>Sun's Galactic Orbit:</strong> ~245 Myr (Rosette)</div>
+          <div><strong>Vertical Bobbing:</strong> ~93 Myr period (±111 pc)</div>
+          <div><strong>Galactic Center:</strong> Sgr A* (8.2 kpc distance)</div>
+          <div><strong>Ecliptic Tilt:</strong> 60.2° to Galactic Midplane</div>
+        </div>
+
+        <pre id="galaxyReadout"></pre>
+      </div>
     </div>`;
 
   const q = <T extends HTMLElement>(sel: string) => root.querySelector<T>(sel)!;
+
+  // Tabs
+  const modeSolarBtn = q<HTMLButtonElement>('#modeSolar');
+  const modeGalaxyBtn = q<HTMLButtonElement>('#modeGalaxy');
+  const solarSection = q<HTMLDivElement>('#solarSection');
+  const galaxySection = q<HTMLDivElement>('#galaxySection');
+
+  // Solar elements
   const play = q<HTMLButtonElement>('#play'),
     rev = q<HTMLButtonElement>('#rev');
   const speed = q<HTMLInputElement>('#speed'),
@@ -101,6 +163,17 @@ export function createPanel(root: HTMLElement, store: AppStore, ctx: PanelContex
     dateIn = q<HTMLInputElement>('#date');
   const out = q<HTMLPreElement>('#readout');
 
+  // Galaxy elements
+  const galPlay = q<HTMLButtonElement>('#galPlay'),
+    galRev = q<HTMLButtonElement>('#galRev'),
+    galReset = q<HTMLButtonElement>('#galReset');
+  const galSpeed = q<HTMLInputElement>('#galSpeed'),
+    galSpeedLabel = q<HTMLSpanElement>('#galSpeedLabel');
+  const galCamera = q<HTMLSelectElement>('#galCamera');
+  const galZExag = q<HTMLInputElement>('#galZExag'),
+    galZExagVal = q<HTMLSpanElement>('#galZExagVal');
+  const galOut = q<HTMLPreElement>('#galaxyReadout');
+
   fill(frameSel, ctx.frames);
   fill(focusSel, ctx.focuses);
   q<HTMLDivElement>('#presets').innerHTML = ctx.presets
@@ -110,6 +183,14 @@ export function createPanel(root: HTMLElement, store: AppStore, ctx: PanelContex
 
   const sync = () => {
     const s = store.get();
+    const isSolar = s.mode === 'solar';
+
+    modeSolarBtn.classList.toggle('active', isSolar);
+    modeGalaxyBtn.classList.toggle('active', !isSolar);
+    solarSection.style.display = isSolar ? 'grid' : 'none';
+    galaxySection.style.display = isSolar ? 'none' : 'grid';
+
+    // Solar sync
     play.textContent = s.playing ? 'Pause' : 'Play';
     rev.textContent = s.reversed ? 'Backward' : 'Forward';
     speedLabel.textContent =
@@ -124,8 +205,22 @@ export function createPanel(root: HTMLElement, store: AppStore, ctx: PanelContex
     compressIn.value = String(Math.log10(s.compress));
     const ratio = Math.round(1 / s.compress);
     cLabel.textContent = ratio === 1 ? '1:1' : `1:${ratio} (visual only)`;
+
+    // Galaxy sync
+    galPlay.textContent = s.playing ? 'Pause' : 'Play';
+    galRev.textContent = s.reversed ? 'Backward' : 'Forward';
+    galSpeed.value = String(s.galaxySpeed);
+    galSpeedLabel.textContent = `${s.galaxySpeed.toFixed(1)} Myr/s`;
+    galCamera.value = s.galaxyCamera;
+    galZExag.value = String(s.galaxyZExag);
+    galZExagVal.textContent =
+      s.galaxyZExag === 1 ? '1.0x (True Scale)' : `${s.galaxyZExag.toFixed(1)}x`;
   };
 
+  modeSolarBtn.onclick = () => store.set('mode', 'solar');
+  modeGalaxyBtn.onclick = () => store.set('mode', 'galaxy');
+
+  // Solar actions
   play.onclick = () => store.set('playing', !store.get().playing);
   rev.onclick = () => store.set('reversed', !store.get().reversed);
   q('#reset').onclick = ctx.onReset;
@@ -147,6 +242,18 @@ export function createPanel(root: HTMLElement, store: AppStore, ctx: PanelContex
   trailSel.onchange = () => store.set('trailDays', Number(trailSel.value));
   q<HTMLInputElement>('#trails').onchange = (e) =>
     store.set('trails', (e.target as HTMLInputElement).checked);
+
+  // Galaxy actions
+  galPlay.onclick = () => store.set('playing', !store.get().playing);
+  galRev.onclick = () => store.set('reversed', !store.get().reversed);
+  galReset.onclick = () => ctx.onGalaxyReset?.();
+  galSpeed.oninput = () => store.set('galaxySpeed', Number(galSpeed.value));
+  galCamera.onchange = () => {
+    const cam = galCamera.value as GalaxyCamera;
+    store.set('galaxyCamera', cam);
+    ctx.onGalaxyCamera?.(cam);
+  };
+  galZExag.oninput = () => store.set('galaxyZExag', Number(galZExag.value));
 
   const intSel = q<HTMLSelectElement>('#integrator');
   const relIn = q<HTMLInputElement>('#relativity');
@@ -170,49 +277,67 @@ export function createPanel(root: HTMLElement, store: AppStore, ctx: PanelContex
 
   return {
     update(d: PanelData) {
-      const au = d.sunBaryAu;
-      out.textContent = [
-        `Date (UTC)      ${d.dateUtc}`,
-        `Sun-barycenter  ${au.toFixed(5)} AU = ${((au * AU_KM) / ctx.sunRadiusKm).toFixed(2)} R_sun`,
-        `Sun speed here  ${d.sunSpeedKms.toFixed(3)} km/s`,
-        `Energy drift    ${d.energyDrift.toExponential(2)}`,
-        `Ang.mom. drift  ${d.angMomDrift.toExponential(2)}`,
-        '',
-        'Body        r_sun(AU)  v(km/s)',
-        ...d.rows.map(
-          (r) => `${r.name.padEnd(10)} ${r.rAu.toFixed(3).padStart(9)} ${r.vKms.toFixed(2).padStart(8)}`,
-        ),
-        d.busy ? '\nComputing jump...' : '',
-      ].join('\n');
+      if (store.get().mode === 'solar') {
+        const au = d.sunBaryAu;
+        out.textContent = [
+          `Date (UTC)      ${d.dateUtc}`,
+          `Sun-barycenter  ${au.toFixed(5)} AU = ${((au * AU_KM) / ctx.sunRadiusKm).toFixed(2)} R_sun`,
+          `Sun speed here  ${d.sunSpeedKms.toFixed(3)} km/s`,
+          `Energy drift    ${d.energyDrift.toExponential(2)}`,
+          `Ang.mom. drift  ${d.angMomDrift.toExponential(2)}`,
+          '',
+          'Body        r_sun(AU)  v(km/s)',
+          ...d.rows.map(
+            (r) => `${r.name.padEnd(10)} ${r.rAu.toFixed(3).padStart(9)} ${r.vKms.toFixed(2).padStart(8)}`,
+          ),
+          d.busy ? '\nComputing jump...' : '',
+        ].join('\n');
 
-      if (d.selectedFacts) {
-        const sf = d.selectedFacts;
-        factsBox.style.display = 'block';
-        factsBox.innerHTML = `
-          <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid rgba(255,255,255,0.2);padding-bottom:4px;">
-            <strong style="font-size:1.1em;color:#ffd700;">${sf.name}</strong>
-            <button id="closeFacts" style="padding:1px 6px;font-size:0.8em;">✕</button>
-          </div>
-          <div style="font-size:0.85em;line-height:1.4;margin-top:6px;">
-            <div><strong>Dist to Sun:</strong> ${sf.distSunAu.toFixed(3)} AU (${sf.lightMinutes.toFixed(1)} light-min)</div>
-            <div><strong>Orbital Speed:</strong> ${sf.speedKms.toFixed(2)} km/s</div>
-            <div><strong>Semi-major axis:</strong> ${sf.elements.a.toFixed(3)} AU</div>
-            <div><strong>Eccentricity:</strong> ${sf.elements.e.toFixed(4)}</div>
-            <div><strong>Period:</strong> ${(sf.elements.period / 365.25).toFixed(2)} yr (${sf.elements.period.toFixed(1)} d)</div>
-            <div><strong>Axial Tilt:</strong> ${sf.axialTiltDeg.toFixed(2)}°</div>
-            <div><strong>Sidereal Day:</strong> ${sf.siderealDayDays.toFixed(2)} d</div>
-            <div><strong>Subsolar Point:</strong> ${sf.subsolarLatDeg.toFixed(1)}° lat, ${sf.subsolarLonDeg.toFixed(1)}° lon</div>
-            <div style="margin-top:4px;border-top:1px dashed rgba(255,255,255,0.15);padding-top:4px;">
-              ${Object.entries(sf.facts)
-                .map(([k, v]) => `<div><strong>${k}:</strong> ${v}</div>`)
-                .join('')}
+        if (d.selectedFacts) {
+          const sf = d.selectedFacts;
+          factsBox.style.display = 'block';
+          factsBox.innerHTML = `
+            <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid rgba(255,255,255,0.2);padding-bottom:4px;">
+              <strong style="font-size:1.1em;color:#ffd700;">${sf.name}</strong>
+              <button id="closeFacts" style="padding:1px 6px;font-size:0.8em;">✕</button>
             </div>
-          </div>
-        `;
-        const closeBtn = q<HTMLButtonElement>('#closeFacts');
-        if (closeBtn) closeBtn.onclick = () => store.set('selected', null);
-      } else {
-        factsBox.style.display = 'none';
+            <div style="font-size:0.85em;line-height:1.4;margin-top:6px;">
+              <div><strong>Dist to Sun:</strong> ${sf.distSunAu.toFixed(3)} AU (${sf.lightMinutes.toFixed(1)} light-min)</div>
+              <div><strong>Orbital Speed:</strong> ${sf.speedKms.toFixed(2)} km/s</div>
+              <div><strong>Semi-major axis:</strong> ${sf.elements.a.toFixed(3)} AU</div>
+              <div><strong>Eccentricity:</strong> ${sf.elements.e.toFixed(4)}</div>
+              <div><strong>Period:</strong> ${(sf.elements.period / 365.25).toFixed(2)} yr (${sf.elements.period.toFixed(1)} d)</div>
+              <div><strong>Axial Tilt:</strong> ${sf.axialTiltDeg.toFixed(2)}°</div>
+              <div><strong>Sidereal Day:</strong> ${sf.siderealDayDays.toFixed(2)} d</div>
+              <div><strong>Subsolar Point:</strong> ${sf.subsolarLatDeg.toFixed(1)}° lat, ${sf.subsolarLonDeg.toFixed(1)}° lon</div>
+              <div style="margin-top:4px;border-top:1px dashed rgba(255,255,255,0.15);padding-top:4px;">
+                ${Object.entries(sf.facts)
+                  .map(([k, v]) => `<div><strong>${k}:</strong> ${v}</div>`)
+                  .join('')}
+              </div>
+            </div>
+          `;
+          const closeBtn = q<HTMLButtonElement>('#closeFacts');
+          if (closeBtn) closeBtn.onclick = () => store.set('selected', null);
+        } else {
+          factsBox.style.display = 'none';
+        }
+      } else if (d.galaxyReadout) {
+        const gr = d.galaxyReadout;
+        galOut.textContent = [
+          `Time T          ${gr.tMyr >= 0 ? '+' : ''}${gr.tMyr.toFixed(2)} Myr`,
+          `Radius R        ${gr.rKpc.toFixed(3)} kpc`,
+          `Height z        ${gr.zPc >= 0 ? '+' : ''}${gr.zPc.toFixed(1)} pc`,
+          `Galactic speed  ${gr.speedKms.toFixed(2)} km/s`,
+          `  v_radial      ${gr.vRadialKms.toFixed(2)} km/s`,
+          `  v_azimuthal   ${gr.vAzimuthalKms.toFixed(2)} km/s`,
+          `  v_z (vertical)${gr.vZKms.toFixed(2)} km/s`,
+          `Azimuth phi     ${gr.phiDeg.toFixed(1)}°`,
+          `Vertical phase  ${gr.vertPhase.toUpperCase()}`,
+          `Next midplane   in ${gr.timeToNextMidplaneMyr.toFixed(1)} Myr`,
+          `Energy drift    ${gr.energyDrift.toExponential(2)}`,
+          `Ang.mom. drift  ${gr.angMomDrift.toExponential(2)}`,
+        ].join('\n');
       }
     },
   };

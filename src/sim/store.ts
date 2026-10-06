@@ -1,9 +1,15 @@
 export type ScaleMode = 'true' | 'pixels' | 'exaggerated';
+export type AppMode = 'solar' | 'galaxy';
+export type GalaxyCamera = 'face-on' | 'edge-on' | 'follow-sun' | 'sgra' | 'perspective';
 
 export interface AppState {
+  mode: AppMode;
   playing: boolean;
   reversed: boolean;
   speed: number; // simulated days per real second (always positive)
+  galaxySpeed: number; // simulated Myr per real second (default 2)
+  galaxyZExag: number; // vertical exaggeration factor for z (default 1)
+  galaxyCamera: GalaxyCamera;
   preset: string;
   trails: boolean;
   frame: string; // ReferenceFrame id
