@@ -50,6 +50,7 @@ const store = createStore<AppState>({
   scaleMode: 'pixels',
   scaleExaggeration: 20,
   selected: null,
+  compress: 1,
 });
 const viewer = createViewer(document.getElementById('app')!, model, HISTORY_CAP, {
   onSelect: (id) => store.set('selected', id),
@@ -73,9 +74,11 @@ function applyFrameDefaults(id: string): void {
   if (id.startsWith('galactic')) {
     store.set('focus', 'sun');
     store.set('trailDays', 730.5);
+    store.set('compress', 0.05);
     viewer.setView([1, 0, 0.3], 120);
   } else {
     store.set('focus', id.startsWith('body:') ? id.slice(5) : 'barycenter');
+    store.set('compress', 1);
     viewPreset(store.get().preset);
   }
 }
@@ -131,6 +134,7 @@ function tick(now: number) {
     scaleMode: s.scaleMode,
     scaleExaggeration: s.scaleExaggeration,
     selected: s.selected,
+    compress: s.compress,
   });
 
   if (frameNo++ % 6 === 0) {

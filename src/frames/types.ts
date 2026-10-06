@@ -11,6 +11,8 @@ export interface ReferenceFrame {
   readonly id: string;
   readonly label: string;
   readonly axes: Mat3 | null; // null = keep simulation axes
+  /** Unit vector, in this frame's output axes, along which the whole system travels (galactic frames only). */
+  readonly travelDir?: readonly [number, number, number];
   origin(t: number, gm: Float64Array, pos: Float64Array, base: number, out: Writable): void;
   originVelocity(t: number, gm: Float64Array, vel: Float64Array, base: number, out: Writable): void;
 }

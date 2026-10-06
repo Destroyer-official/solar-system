@@ -31,6 +31,11 @@ export function sunVelocitySim(): V3 {
   return [c(0), c(1), c(2)];
 }
 
+const unit = (v: readonly number[]): [number, number, number] => {
+  const l = Math.hypot(v[0]!, v[1]!, v[2]!);
+  return [v[0]! / l, v[1]! / l, v[2]! / l];
+};
+
 /**
  * Frame in which the solar system's barycenter moves at the Sun's galactic velocity.
  * x_gal = x_sim + V t   (origin = -V t).  Straight-line motion: valid for thousands of years
@@ -43,10 +48,14 @@ export function galacticFrame(alignAxes: boolean): ReferenceFrame {
   const axes: Mat3 | null = alignAxes
     ? [ex[0]!, ex[1]!, ex[2]!, ey[0]!, ey[1]!, ey[2]!, ez[0]!, ez[1]!, ez[2]!]
     : null;
+  const g = sunGalacticVelocityKms();
+  const dirAligned = unit(g); // aligned axes: (U, V+Theta, W) normalized
+  const dirSim = unit(V); // ecliptic axes
   return {
     id: alignAxes ? 'galactic-aligned' : 'galactic',
     label: alignAxes ? 'Galactic (axes aligned to galaxy)' : 'Galactic (ecliptic axes)',
     axes,
+    travelDir: alignAxes ? dirAligned : dirSim,
     origin: (t, _gm, _pos, _base, out) => {
       out[0] = -V[0]! * t;
       out[1] = -V[1]! * t;

@@ -37,8 +37,10 @@ export class BodyVisual {
 
     this.group = new THREE.Group();
 
-    // Geometry: poles along +z, prime meridian along +x
-    const geom = new THREE.SphereGeometry(1, 64, 32).rotateX(Math.PI / 2);
+    // Geometry: poles along +z, prime meridian along +x (Sun 128x64 to avoid faceting when zoomed)
+    const segW = opts.id === 'sun' ? 128 : 64;
+    const segH = opts.id === 'sun' ? 64 : 32;
+    const geom = new THREE.SphereGeometry(1, segW, segH).rotateX(Math.PI / 2);
 
     let mat: THREE.Material;
     const texGetter = typeof document !== 'undefined' ? PLANET_TEXTURE_GETTERS[opts.id] : undefined;

@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { JD_J2000 } from '@/data/constants';
 import type { ReferenceFrame } from '@/frames/types';
-import { mapPoint } from '@/frames/transform';
+import { mapPoint, squash } from '@/frames/transform';
 import type { SystemState } from '@/physics/types';
 import type { History } from '@/sim/history';
 import type { SystemModel } from '@/sim/registry';
@@ -19,6 +19,7 @@ export interface ViewState {
   trails: boolean;
   trailDays: number;
   history: History;
+  compress?: number;
   scaleMode?: ScaleMode;
   scaleExaggeration?: number;
   selected?: string | null;
@@ -135,7 +136,8 @@ export function createViewer(
 
   const o = [0, 0, 0],
     p = [0, 0, 0],
-    f = [0, 0, 0];
+    f = [0, 0, 0],
+    w = [0, 0, 0];
 
   function render(s: SystemState, v: ViewState): void {
     const ax = v.frame.axes;
@@ -156,7 +158,8 @@ export function createViewer(
       mapPoint(ax, o, s.pos[3 * i]!, s.pos[3 * i + 1]!, s.pos[3 * i + 2]!, p);
       const vis = visuals[i]!;
 
-      vis.group.position.set(p[0]! - f[0]!, p[1]! - f[1]!, p[2]! - f[2]!);
+      squash(v.frame.travelDir, v.compress ?? 1, p[0]! - f[0]!, p[1]! - f[1]!, p[2]! - f[2]!, w);
+      vis.group.position.set(w[0]!, w[1]!, w[2]!);
 
       if (i === 0) {
         sunLight.position.copy(vis.group.position);
@@ -178,12 +181,21 @@ export function createViewer(
     }
 
     mapPoint(ax, o, 0, 0, 0, p);
-    baryAttr.setXYZ(0, p[0]! - f[0]!, p[1]! - f[1]!, p[2]! - f[2]!);
+    squash(v.frame.travelDir, v.compress ?? 1, p[0]! - f[0]!, p[1]! - f[1]!, p[2]! - f[2]!, w);
+    baryAttr.setXYZ(0, w[0]!, w[1]!, w[2]!);
     baryAttr.needsUpdate = true;
 
     for (const t of trails) t.line.visible = v.trails;
     if (v.trails) {
-      const count = buildTracks(v.history, s, v.frame, v.focus, v.trailDays, trailData);
+      const count = buildTracks(
+        v.history,
+        s,
+        v.frame,
+        v.focus,
+        v.trailDays,
+        trailData,
+        v.compress ?? 1,
+      );
       for (const t of trails) t.commit(count);
     }
 

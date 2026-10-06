@@ -12,6 +12,7 @@ export interface AppState {
   scaleMode: ScaleMode;
   scaleExaggeration: number; // 1 to 500
   selected: string | null;
+  compress: number; // along-track compression factor (1 = true scale, 0.05 = 1:20)
 }
 
 export function createStore<T extends object>(initial: T) {

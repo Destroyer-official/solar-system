@@ -78,6 +78,7 @@ export function createPanel(root: HTMLElement, store: AppStore, ctx: PanelContex
         </select>
       </label>
       <label><input id="trails" type="checkbox" checked> Trails</label>
+      <label>Along-track compression <input id="compress" type="range" min="-2" max="0" step="0.05" value="0"> <span id="cLabel">1:1</span></label>
       <div id="factsBox" class="facts-box" style="display:none;"></div>
       <pre id="readout"></pre>
     </div>`;
@@ -93,6 +94,8 @@ export function createPanel(root: HTMLElement, store: AppStore, ctx: PanelContex
   const scaleExagIn = q<HTMLInputElement>('#scaleExag');
   const exagRow = q<HTMLElement>('#exagRow');
   const exagVal = q<HTMLElement>('#exagVal');
+  const compressIn = q<HTMLInputElement>('#compress');
+  const cLabel = q<HTMLSpanElement>('#cLabel');
   const factsBox = q<HTMLDivElement>('#factsBox');
   const trailSel = q<HTMLSelectElement>('#trailDays'),
     dateIn = q<HTMLInputElement>('#date');
@@ -118,6 +121,9 @@ export function createPanel(root: HTMLElement, store: AppStore, ctx: PanelContex
     exagRow.style.display = s.scaleMode === 'exaggerated' ? 'block' : 'none';
     scaleExagIn.value = String(s.scaleExaggeration);
     exagVal.textContent = `${s.scaleExaggeration}x`;
+    compressIn.value = String(Math.log10(s.compress));
+    const ratio = Math.round(1 / s.compress);
+    cLabel.textContent = ratio === 1 ? '1:1' : `1:${ratio} (visual only)`;
   };
 
   play.onclick = () => store.set('playing', !store.get().playing);
@@ -134,6 +140,9 @@ export function createPanel(root: HTMLElement, store: AppStore, ctx: PanelContex
   scaleExagIn.oninput = () => {
     store.set('scaleExaggeration', Number(scaleExagIn.value));
     exagVal.textContent = `${scaleExagIn.value}x`;
+  };
+  compressIn.oninput = () => {
+    store.set('compress', 10 ** Number(compressIn.value));
   };
   trailSel.onchange = () => store.set('trailDays', Number(trailSel.value));
   q<HTMLInputElement>('#trails').onchange = (e) =>

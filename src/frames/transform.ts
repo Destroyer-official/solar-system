@@ -41,3 +41,26 @@ export function transformState(
     mapPoint(frame.axes, ov, s.vel[3 * i]!, s.vel[3 * i + 1]!, s.vel[3 * i + 2]!, outVel, 3 * i);
   }
 }
+
+/** Compress the component of (x,y,z) along unit axis u by factor s. Writes to out[off..]. View-only. */
+export function squash(
+  u: readonly number[] | undefined,
+  s: number,
+  x: number,
+  y: number,
+  z: number,
+  out: { [i: number]: number },
+  off = 0,
+): void {
+  if (!u || s === 1) {
+    out[off] = x;
+    out[off + 1] = y;
+    out[off + 2] = z;
+    return;
+  }
+  const k = (s - 1) * (x * u[0]! + y * u[1]! + z * u[2]!);
+  out[off] = x + k * u[0]!;
+  out[off + 1] = y + k * u[1]!;
+  out[off + 2] = z + k * u[2]!;
+}
+

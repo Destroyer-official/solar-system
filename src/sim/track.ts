@@ -1,5 +1,5 @@
 import type { ReferenceFrame } from '@/frames/types';
-import { mapPoint } from '@/frames/transform';
+import { mapPoint, squash } from '@/frames/transform';
 import type { SystemState } from '@/physics/types';
 import type { History } from './history';
 
@@ -15,6 +15,7 @@ export function buildTracks(
   focus: number,
   windowDays: number,
   outs: Float32Array[],
+  compress = 1,
 ): number {
   const ax = frame.axes,
     n = live.n;
@@ -39,9 +40,7 @@ export function buildTracks(
     for (let i = 0; i < n; i++) {
       mapPoint(ax, o, pos[base + 3 * i]!, pos[base + 3 * i + 1]!, pos[base + 3 * i + 2]!, p);
       const out = outs[i]!;
-      out[3 * v] = p[0]! - f[0]!;
-      out[3 * v + 1] = p[1]! - f[1]!;
-      out[3 * v + 2] = p[2]! - f[2]!;
+      squash(frame.travelDir, compress, p[0]! - f[0]!, p[1]! - f[1]!, p[2]! - f[2]!, out, 3 * v);
     }
     v++;
   };
