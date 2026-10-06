@@ -22,6 +22,7 @@ export interface SystemState {
   gm: Float64Array; // length n
   pos: Float64Array; // length 3n
   vel: Float64Array; // length 3n
+  nMassive?: number; // massive body boundary for particles / tide
 }
 
 /** Plug-in force: gravity, relativity, J2... adds into acc. */

@@ -3,11 +3,21 @@ import { JD_J2000, gmToInternal } from '@/data/constants';
 import type { BodyDef, SystemState, Vec3 } from '@/physics/types';
 import { perihelionState } from '@/physics/orbit';
 import { createState, recenterToBarycenter } from '@/physics/system';
+export { buildModel, buildSolver, type ModelData, type SolverData } from './model';
 
 const bodyFiles = import.meta.glob<BodyJson>('/src/data/bodies/*.json', {
   eager: true,
   import: 'default',
 });
+
+const moonFiles = import.meta.glob<BodyJson>('/src/data/moons/*.json', {
+  eager: true,
+  import: 'default',
+});
+
+export const PLANET_BODIES: BodyJson[] = Object.values(bodyFiles);
+export const MOON_BODIES: BodyJson[] = Object.values(moonFiles);
+export const ALL_BODIES: BodyJson[] = [...PLANET_BODIES, ...MOON_BODIES];
 
 const physicalFiles = import.meta.glob<PhysicalJson>('/src/data/physical/*.json', {
   eager: true,
@@ -19,6 +29,8 @@ for (const [path, data] of Object.entries(physicalFiles)) {
   const match = path.match(/\/([^/]+)\.json$/);
   if (match) physicalById.set(match[1]!, data);
 }
+
+export const PHYSICAL_MAP: Record<string, PhysicalJson> = Object.fromEntries(physicalById);
 
 export interface SystemModel {
   ids: string[];
@@ -53,9 +65,21 @@ export function buildDefs(list: readonly BodyJson[]): BodyDef[] {
       case 'root':
         def = { ...base, position: [0, 0, 0], velocity: [0, 0, 0] };
         break;
-      case 'vectors':
-        def = { ...base, position: b.initial.position, velocity: b.initial.velocity };
+      case 'vectors': {
+        const init = b.initial;
+        if (init.about === 'parent' && b.parent) {
+          const parentDef = build(byId.get(b.parent)!, [...stack, b.id]);
+          def = {
+            ...base,
+            parent: b.parent,
+            position: add(parentDef.position, init.position),
+            velocity: add(parentDef.velocity, init.velocity),
+          };
+        } else {
+          def = { ...base, position: init.position, velocity: init.velocity };
+        }
         break;
+      }
       case 'elements': {
         const init = b.initial;
         const pj = byId.get(init.parent);
@@ -83,7 +107,7 @@ export function buildDefs(list: readonly BodyJson[]): BodyDef[] {
   return list.map((b) => build(b, [])).sort((a, b) => b.gm - a.gm); // heaviest (Sun) first
 }
 
-export function loadSystem(list: readonly BodyJson[] = Object.values(bodyFiles)): SystemModel {
+export function loadSystem(list: readonly BodyJson[] = PLANET_BODIES): SystemModel {
   const epochs = new Set<number>();
   for (const b of list) if (b.initial.type === 'vectors') epochs.add(b.initial.epochJd);
   if (epochs.size > 1) throw new Error(`Bodies have different epochs: ${[...epochs].join(', ')}`);

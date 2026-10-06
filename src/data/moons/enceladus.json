@@ -1,0 +1,23 @@
+{
+  "id": "enceladus",
+  "name": "Enceladus",
+  "parent": "saturn",
+  "gmKm3S2": 7.2104,
+  "radiusKm": 252.1,
+  "color": "#ffffff",
+  "initial": {
+    "type": "vectors",
+    "about": "parent",
+    "epochJd": 2461319.5,
+    "position": [
+      -0.001318008300982952,
+      0.0008447810631015824,
+      -0.0003149250589349337
+    ],
+    "velocity": [
+      -0.004075231593680418,
+      -0.005162246948069237,
+      0.003098551332406518
+    ]
+  }
+}

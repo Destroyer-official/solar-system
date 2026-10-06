@@ -3,8 +3,8 @@ type Triple = readonly [number, number, number];
 export type InitialState =
   | { type: 'root' }
   | { type: 'elements'; parent: string; aAu: number; e: number; incDeg: number }
-  /** Barycentric (SSB), J2000 ecliptic axes, AU and AU/day, at epochJd (TDB). */
-  | { type: 'vectors'; epochJd: number; position: Triple; velocity: Triple };
+  /** Barycentric (SSB) or parent-relative, J2000 ecliptic axes, AU and AU/day, at epochJd (TDB). */
+  | { type: 'vectors'; epochJd: number; position: Triple; velocity: Triple; about?: 'parent' | 'ssb' };
 
 export interface RotationJson {
   poleRaDeg: number;
