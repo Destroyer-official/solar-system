@@ -19,6 +19,7 @@ const MIN_PIXEL_RADIUS = 4;
 
 export interface ViewState {
   mode?: 'solar' | 'galaxy';
+  presetCategory?: 'galaxy' | 'solar' | 'moons' | 'visits';
   showMilkyWay?: boolean;
   showOortCloud?: boolean;
   showGalacticHalo?: boolean;
@@ -276,9 +277,14 @@ export function createViewer(
     }
 
     // Milky Way Galaxy in unified cosmos
-    if (v.showMilkyWay !== false) {
+    // The 3D spiral arms and 500 Myr galactic orbit are displayed when viewing at galaxy scale
+    // or when the camera is zoomed out (> 800 AU). At solar/moon scale, the starry celestial sphere
+    // provides the realistic backdrop without an unnatural miniature galaxy disk overlapping planets.
+    const camDist = camera.position.length();
+    const isGalaxyScale = v.presetCategory === 'galaxy' || camDist > 800;
+
+    if (v.showMilkyWay !== false && isGalaxyScale) {
       galaxyVisual.setVisible(true);
-      const camDist = camera.position.length();
       galaxyVisual.setUnifiedMode(camDist, v.showGalacticHalo !== false);
       if (v.galaxyZExag !== undefined) {
         galaxyVisual.setVerticalExaggeration(v.galaxyZExag);

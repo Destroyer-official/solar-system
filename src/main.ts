@@ -62,18 +62,18 @@ const store = createStore<AppState>({
   showValidationTable: false,
   playing: true,
   reversed: false,
-  speed: 100,
+  speed: 15,
   galaxySpeed: 2.0,
   galaxyZExag: 1.0,
   galaxyCamera: 'perspective',
-  preset: 'cosmic',
+  preset: 'outer',
   trails: true,
-  frame: 'galactic-aligned',
+  frame: 'body:sun',
   focus: 'sun',
-  trailDays: 29220,
+  trailDays: 4383,
   scaleMode: 'pixels',
   scaleExaggeration: 20,
-  selected: null,
+  selected: 'earth',
   compress: 1,
 });
 
@@ -167,7 +167,7 @@ store.subscribe((s, changed) => {
   }
 });
 
-applyPreset('cosmic');
+applyPreset('outer');
 
 const P = new Float64Array(3 * model.state.n),
   V = new Float64Array(3 * model.state.n);
@@ -198,8 +198,10 @@ function tick(now: number) {
     client.updateDisplay();
   }
 
+  const curPreset = validPresets[s.preset] ?? PRESETS[s.preset];
   viewer.render(client.display, {
     mode: s.mode,
+    presetCategory: curPreset?.category ?? 'solar',
     showMilkyWay: s.showMilkyWay,
     showOortCloud: s.showOortCloud,
     showGalacticHalo: s.showGalacticHalo,

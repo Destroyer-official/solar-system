@@ -125,17 +125,6 @@ export class BodyVisual {
       };
       if (tex) sunOpts.map = tex;
       mat = new THREE.MeshBasicMaterial(sunOpts);
-
-      // Atmospheric outer glow
-      const glowGeom = new THREE.SphereGeometry(1.2, 32, 16);
-      const glowMat = new THREE.MeshBasicMaterial({
-        color: 0xffaa22,
-        transparent: true,
-        opacity: 0.25,
-        side: THREE.BackSide,
-      });
-      const glow = new THREE.Mesh(glowGeom, glowMat);
-      this.group.add(glow);
     } else {
       const stdOpts: THREE.MeshStandardMaterialParameters = {
         color: tex ? 0xffffff : opts.color,
@@ -150,6 +139,19 @@ export class BodyVisual {
     // Oblateness along the pole (+z)
     this.mesh.scale.z = 1 - this.flattening;
     this.group.add(this.mesh);
+
+    // Atmospheric coronal outer glow - scales strictly with the Sun's mesh disc
+    if (opts.id === 'sun') {
+      const glowGeom = new THREE.SphereGeometry(1.2, 32, 16);
+      const glowMat = new THREE.MeshBasicMaterial({
+        color: 0xffaa22,
+        transparent: true,
+        opacity: 0.25,
+        side: THREE.BackSide,
+      });
+      const glow = new THREE.Mesh(glowGeom, glowMat);
+      this.mesh.add(glow);
+    }
 
     // Floating text label sprite
     this.labelSprite = createTextSprite(this.name, opts.color, this.isMoon);

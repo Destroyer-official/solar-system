@@ -35,7 +35,7 @@ export const PRESETS: Record<string, Preset> = {
     focus: 'sun',
     dir: [0.35, -0.75, 0.55],
     dist: 90,
-    trailDays: 29220,
+    trailDays: 730,
   },
   oort: {
     label: '🌐 Oort Cloud (100,000 AU)',
@@ -53,9 +53,9 @@ export const PRESETS: Record<string, Preset> = {
     category: 'solar',
     frame: 'body:sun',
     focus: 'sun',
-    dir: [0, -0.8, 0.6],
-    dist: 85,
-    trailDays: 36525,
+    dir: [0, -0.75, 0.65],
+    dist: 55,
+    trailDays: 4383,
   },
   inner: {
     label: '☀️ Inner Planets',

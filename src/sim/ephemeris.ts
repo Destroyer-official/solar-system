@@ -55,19 +55,17 @@ export class EphemerisProvider {
   interpolate(offsetDays: number, outPos: Float64Array): boolean {
     const minT = this.anchors[0]!.offsetDays;
     const maxT = this.anchors[this.anchors.length - 1]!.offsetDays;
-
-    if (offsetDays < minT || offsetDays > maxT) {
-      return false;
-    }
+    const clampedT = Math.max(minT, Math.min(maxT, offsetDays));
+    const inRange = offsetDays >= minT && offsetDays <= maxT;
 
     // Find interval [i0, i1]
     let idx = 0;
-    while (idx < this.anchors.length - 1 && this.anchors[idx + 1]!.offsetDays <= offsetDays) {
+    while (idx < this.anchors.length - 1 && this.anchors[idx + 1]!.offsetDays <= clampedT) {
       idx++;
     }
 
     const a0 = this.anchors[idx]!;
-    if (Math.abs(offsetDays - a0.offsetDays) < 1e-6) {
+    if (Math.abs(clampedT - a0.offsetDays) < 1e-6) {
       // Exact anchor match
       for (let i = 0; i < this.model.ids.length; i++) {
         const id = this.model.ids[i]!;
@@ -88,7 +86,7 @@ export class EphemerisProvider {
     const a1 = this.anchors[idx + 1]!;
     const t0 = a0.offsetDays;
     const t1 = a1.offsetDays;
-    const u = (offsetDays - t0) / (t1 - t0);
+    const u = (clampedT - t0) / (t1 - t0);
 
     // Smoothstep cubic interpolation between anchor nodes
     const h00 = 2 * u * u * u - 3 * u * u + 1;
@@ -109,7 +107,7 @@ export class EphemerisProvider {
         outPos[3 * i + 2] = this.model.state.pos[3 * i + 2]!;
       }
     }
-    return true;
+    return inRange;
   }
 
   /**
