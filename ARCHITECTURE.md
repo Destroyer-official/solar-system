@@ -3,17 +3,18 @@
 Layer diagram (imports flow downward only):
 
 ```
-ui → render → sim → physics → data
-              ↘ frames (reference-frame transforms, used by render/sim)
+ui → render → sim → frames → physics → data
 ```
 
 ## Rules
 
-1. Layers only import downward: `ui → render → sim → physics → data`.
+1. Layers only import downward: `ui → render → sim → frames → physics → data`.
 2. Physics is pure: no DOM, no Three.js, no `Date.now()`, no `Math.random()` without a seed.
 3. Internal units: AU, day, AU³/day². Convert only at the edges.
 4. Adding a body means adding JSON. Adding a physical effect means adding a `ForceModel`.
 5. Scale exaggeration and frame changes happen in render and frames, never in physics.
+6. A frame never changes physics. It is a read-only view (`x_f = R·(x − origin(t))`).
+7. Anything that must survive a frame switch is stored inertially (barycentric) in `History`, never in a frame.
 
 ## Research grounding (Phase 0 survey, Oct 2026)
 

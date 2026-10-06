@@ -42,3 +42,9 @@ pre {
   margin: 0;
   font: 12px ui-monospace, monospace;
 }
+select {
+  background: #223;
+  color: #ddd;
+  border: 1px solid #446;
+  border-radius: 4px;
+}

@@ -4,6 +4,9 @@ export interface AppState {
   speed: number; // simulated days per real second (always positive)
   preset: 'system' | 'barycenter';
   trails: boolean;
+  frame: string; // ReferenceFrame id
+  focus: string; // 'barycenter' or a body id: what the camera follows
+  trailDays: number; // how much history to draw
 }
 
 export function createStore<T extends object>(initial: T) {

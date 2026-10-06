@@ -13,6 +13,7 @@ export class Engine {
   readonly state: SystemState;
   maxDt: number; // largest allowed step, days
   maxSteps: number; // per advance() call, so a fast slider slows the sim instead of freezing the page
+  onStep?: (s: SystemState) => void;
   private readonly forces: ForceModel[];
   private readonly integrator: Integrator;
   private readonly initial: SystemState;
@@ -43,7 +44,10 @@ export class Engine {
     const d = Math.max(-limit, Math.min(limit, days));
     const steps = Math.max(1, Math.ceil(Math.abs(d) / this.maxDt));
     const dt = d / steps;
-    for (let i = 0; i < steps; i++) this.integrator.step(this.state, this.forces, dt);
+    for (let i = 0; i < steps; i++) {
+      this.integrator.step(this.state, this.forces, dt);
+      this.onStep?.(this.state);
+    }
     return d;
   }
 

@@ -1,33 +1,42 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { AU_KM } from '@/data/constants';
+import type { ReferenceFrame } from '@/frames/types';
+import { mapPoint } from '@/frames/transform';
 import type { SystemState } from '@/physics/types';
+import type { History } from '@/sim/history';
 import type { SystemModel } from '@/sim/registry';
+import { buildTracks } from '@/sim/track';
 import { Trail } from './trail';
 
 export type CameraPreset = 'system' | 'barycenter';
-
 const PRESET_POS: Record<CameraPreset, readonly [number, number, number]> = {
-  system: [0, -14, 8], // AU: sees Jupiter's whole orbit
-  barycenter: [0, -0.025, 0.012], // AU: Sun's true-size disk fills the view
+  system: [0, -14, 8],
+  barycenter: [0, -0.025, 0.012],
 };
 const MIN_PIXEL_RADIUS = 4;
-const TRAIL_CAPACITY = 4000;
-const TRAIL_INTERVAL_DAYS = 5;
 
-export function createViewer(container: HTMLElement, model: SystemModel) {
+export interface ViewState {
+  frame: ReferenceFrame;
+  focus: number; // body index, -1 = barycenter
+  trails: boolean;
+  trailDays: number;
+  history: History;
+}
+
+export function createViewer(container: HTMLElement, model: SystemModel, trailCapacity: number) {
   const renderer = new THREE.WebGLRenderer({ antialias: true, logarithmicDepthBuffer: true });
   renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
   container.appendChild(renderer.domElement);
 
   const scene = new THREE.Scene();
-  const camera = new THREE.PerspectiveCamera(50, 1, 1e-6, 1e4);
-  camera.up.set(0, 0, 1); // physics is z-up (ICRF/ecliptic style)
+  const camera = new THREE.PerspectiveCamera(50, 1, 1e-6, 1e5);
+  camera.up.set(0, 0, 1);
 
   const controls = new OrbitControls(camera, renderer.domElement);
   controls.enableDamping = true;
   controls.minDistance = 1e-4;
-  controls.maxDistance = 200;
+  controls.maxDistance = 2000;
 
   const sphere = new THREE.SphereGeometry(1, 32, 16);
   const meshes = model.ids.map((_, i) => {
@@ -36,14 +45,16 @@ export function createViewer(container: HTMLElement, model: SystemModel) {
     return m;
   });
   const trails = model.ids.map((_, i) => {
-    const t = new Trail(TRAIL_CAPACITY, model.colors[i]!, TRAIL_INTERVAL_DAYS);
+    const t = new Trail(trailCapacity + 1, model.colors[i]!);
     scene.add(t.line);
     return t;
   });
+  const trailData = trails.map((t) => t.data);
 
-  // Barycenter marker (fixed-size point)
+  const baryAttr = new THREE.BufferAttribute(new Float32Array(3), 3);
+  baryAttr.setUsage(THREE.DynamicDrawUsage);
   const baryGeom = new THREE.BufferGeometry();
-  baryGeom.setAttribute('position', new THREE.BufferAttribute(new Float32Array(3), 3));
+  baryGeom.setAttribute('position', baryAttr);
   const bary = new THREE.Points(
     baryGeom,
     new THREE.PointsMaterial({ color: 0xffffff, size: 8, sizeAttenuation: false }),
@@ -51,13 +62,16 @@ export function createViewer(container: HTMLElement, model: SystemModel) {
   bary.frustumCulled = false;
   scene.add(bary);
 
-  const origin = [0, 0, 0]; // floating origin (float64). Phase 1: fixed at the barycenter.
-
-  function setPreset(p: CameraPreset): void {
-    camera.position.set(...PRESET_POS[p]);
+  /** Camera position is relative to the focus (the scene origin is always the focus). */
+  function setView(dir: readonly [number, number, number], distanceAu: number): void {
+    camera.position.set(dir[0], dir[1], dir[2]).setLength(distanceAu);
     controls.target.set(0, 0, 0);
     controls.update();
   }
+  const setPreset = (p: CameraPreset) => {
+    const v = PRESET_POS[p];
+    setView(v, Math.hypot(v[0], v[1], v[2]));
+  };
   setPreset('system');
 
   let height = 1;
@@ -72,32 +86,43 @@ export function createViewer(container: HTMLElement, model: SystemModel) {
   new ResizeObserver(resize).observe(container);
   resize();
 
-  function render(s: SystemState, showTrails: boolean): void {
-    const k = ((2 * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * MIN_PIXEL_RADIUS) / height) as number;
+  const o = [0, 0, 0],
+    p = [0, 0, 0],
+    f = [0, 0, 0];
+
+  function render(s: SystemState, v: ViewState): void {
+    const ax = v.frame.axes;
+    v.frame.origin(s.t, s.gm, s.pos, 0, o);
+
+    // Floating origin = the focus, in frame coordinates (float64). Everything sent to the GPU is relative to it.
+    if (v.focus >= 0) {
+      mapPoint(ax, o, s.pos[3 * v.focus]!, s.pos[3 * v.focus + 1]!, s.pos[3 * v.focus + 2]!, f);
+    } else {
+      mapPoint(ax, o, 0, 0, 0, f);
+    }
+
+    const k = (2 * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * MIN_PIXEL_RADIUS) / height;
     for (let i = 0; i < s.n; i++) {
-      const x = s.pos[3 * i]!,
-        y = s.pos[3 * i + 1]!,
-        z = s.pos[3 * i + 2]!;
+      mapPoint(ax, o, s.pos[3 * i]!, s.pos[3 * i + 1]!, s.pos[3 * i + 2]!, p);
       const mesh = meshes[i]!;
-      mesh.position.set(x - origin[0]!, y - origin[1]!, z - origin[2]!);
-      // True radius, but never smaller than MIN_PIXEL_RADIUS on screen.
+      mesh.position.set(p[0]! - f[0]!, p[1]! - f[1]!, p[2]! - f[2]!);
       const dist = camera.position.distanceTo(mesh.position);
       mesh.scale.setScalar(Math.max(model.radiusKm[i]! / AU_KM, dist * k));
-
-      const tr = trails[i]!;
-      tr.line.visible = showTrails;
-      if (showTrails) {
-        tr.sample(s.t, x, y, z);
-        tr.update(origin, [x, y, z]);
-      }
     }
+
+    mapPoint(ax, o, 0, 0, 0, p); // barycenter = simulation origin, seen through the frame
+    baryAttr.setXYZ(0, p[0]! - f[0]!, p[1]! - f[1]!, p[2]! - f[2]!);
+    baryAttr.needsUpdate = true;
+
+    for (const t of trails) t.line.visible = v.trails;
+    if (v.trails) {
+      const count = buildTracks(v.history, s, v.frame, v.focus, v.trailDays, trailData);
+      for (const t of trails) t.commit(count);
+    }
+
     controls.update();
     renderer.render(scene, camera);
   }
 
-  return {
-    render,
-    setPreset,
-    clearTrails: () => trails.forEach((t) => t.clear()),
-  };
+  return { render, setPreset, setView };
 }

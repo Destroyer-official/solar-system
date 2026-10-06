@@ -1,7 +1,16 @@
-import type { SystemState } from '@/physics/types';
+export type Mat3 = readonly [number, number, number, number, number, number, number, number, number]; // row-major
+export type Writable = { [i: number]: number };
 
+/**
+ * A frame maps simulation coordinates to display coordinates:   x_f = R (x_sim - origin)
+ * Column-vector convention (SPICE-compatible): R left-multiplies the offset vector.
+ * `base` is an offset into the pos/vel array, so history snapshots need no copying.
+ * Frames are read-only views: they never mutate their inputs, only write `out`.
+ */
 export interface ReferenceFrame {
   readonly id: string;
-  /** Write frame-relative positions/velocities into out (same length as state). */
-  transform(state: SystemState, outPos: Float64Array, outVel: Float64Array): void;
+  readonly label: string;
+  readonly axes: Mat3 | null; // null = keep simulation axes
+  origin(t: number, gm: Float64Array, pos: Float64Array, base: number, out: Writable): void;
+  originVelocity(t: number, gm: Float64Array, vel: Float64Array, base: number, out: Writable): void;
 }
