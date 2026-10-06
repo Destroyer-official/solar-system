@@ -1,6 +1,6 @@
 import { AU_KM } from '@/data/constants';
 import type { BodyRow } from '@/sim/readout';
-import type { AppStore, ScaleMode, GalaxyCamera } from '@/sim/store';
+import type { AppStore, ScaleMode } from '@/sim/store';
 import type { ComputedFacts } from '@/sim/facts';
 import type { GalaxyReadout } from '@/sim/galaxySim';
 import type { GalaxyModel } from '@/data/galaxy';
@@ -9,6 +9,7 @@ import type { ValidationRow } from '@/sim/ephemeris';
 export interface Option {
   id: string;
   label: string;
+  category?: string;
 }
 
 export interface PanelContext {
@@ -23,7 +24,7 @@ export interface PanelContext {
   onNow(): void;
   onReseedHorizons?(): void;
   onGalaxyReset?(): void;
-  onGalaxyCamera?(cam: GalaxyCamera): void;
+  onGalaxyCamera?(cam: string): void;
   onGalaxyModelChange?(modelId: string): void;
   onPhysicsChange?(opts: {
     integrator?: 'leapfrog' | 'yoshida4';
@@ -47,16 +48,20 @@ export interface PanelData {
 export function createPanel(root: HTMLElement, store: AppStore, ctx: PanelContext) {
   root.innerHTML = `
     <div class="panel-inner">
-      <div class="tabs">
-        <button id="modeSolar" class="tab-btn active">Solar System</button>
-        <button id="modeGalaxy" class="tab-btn">Milky Way Galaxy</button>
+      <div class="panel-header" style="flex-direction: column; align-items: flex-start; gap: 2px;">
+        <h1 style="font-size: 14px; font-weight: 700; color: #fff; display: flex; align-items: center; gap: 6px;">
+          <span>🌌</span> Cosmic Universe Simulator
+        </h1>
+        <div style="font-size: 10px; color: #7dd3fc; opacity: 0.9;">
+          Unified Solar System, Planetary Moons & Milky Way Galaxy
+        </div>
       </div>
 
       <!-- Dynamics Mode Indicator & Reseed -->
-      <div class="dynamics-bar">
+      <div class="dynamics-bar" style="margin-top: 4px;">
         <div style="display: flex; align-items: center; gap: 6px;">
-          <span style="font-size: 11px; opacity: 0.7;">Mode:</span>
-          <span id="dynamicsStatus" class="status-badge badge-sim">N-Body Sim</span>
+          <span style="font-size: 11px; opacity: 0.7;">Dynamics:</span>
+          <span id="dynamicsStatus" class="status-badge badge-sim">Yoshida-4 N-Body</span>
         </div>
         <div style="display: flex; gap: 4px;">
           <button id="toggleDynamics" style="font-size: 10px; padding: 2px 6px;">Switch Mode</button>
@@ -106,80 +111,101 @@ export function createPanel(root: HTMLElement, store: AppStore, ctx: PanelContex
 
       <div id="realityInspector" class="reality-inspector" style="display: none;">
         <div class="reality-item">
-          <span>Positions:</span>
-          <span id="realPosTag" class="reality-tag tag-model">Model</span>
+          <span>Planet Positions:</span>
+          <span id="realPosTag" class="reality-tag tag-model">True Float64 N-Body</span>
         </div>
         <div class="reality-item">
-          <span>Speeds:</span>
-          <span class="reality-tag tag-true">True (float64)</span>
+          <span>Moons Dynamics:</span>
+          <span class="reality-tag tag-true">Hierarchical Sub-cycled</span>
         </div>
         <div class="reality-item">
           <span>Body Radii:</span>
-          <span id="realSizeTag" class="reality-tag tag-scaled">Scaled (visual only)</span>
+          <span id="realSizeTag" class="reality-tag tag-scaled">Minimum Pixel Clamped</span>
         </div>
         <div class="reality-item">
           <span>Planetary Disc:</span>
-          <span class="reality-tag tag-true">True (flat ~1:60)</span>
+          <span class="reality-tag tag-true">True Flat (within 7°)</span>
         </div>
         <div class="reality-item">
           <span>Oort Cloud:</span>
-          <span class="reality-tag tag-model">Model (2k–100k AU sphere)</span>
+          <span class="reality-tag tag-model">100,000 AU Sphere</span>
         </div>
         <div class="reality-item">
-          <span>Galactic Travel:</span>
-          <span id="realTravelTag" class="reality-tag tag-scaled">Scaled (1:20 view)</span>
-        </div>
-        <div class="reality-item">
-          <span>Thin Disc:</span>
-          <span class="reality-tag tag-true">True (flat ~1:100)</span>
+          <span>Galactic Disc:</span>
+          <span class="reality-tag tag-true">Thin Disc (~1:100)</span>
         </div>
         <div class="reality-item">
           <span>Galactic Halo:</span>
-          <span class="reality-tag tag-model">Model (158 clusters + halo)</span>
+          <span class="reality-tag tag-model">158 Globular Clusters</span>
         </div>
         <div class="reality-item">
-          <span>Dark Matter:</span>
-          <span class="reality-tag tag-model">Model (200kpc envelope)</span>
-        </div>
-        <div class="reality-item">
-          <span>Textures:</span>
-          <span class="reality-tag tag-model">Model (IAU map)</span>
-        </div>
-        <div class="reality-item">
-          <span>Stars:</span>
-          <span class="reality-tag tag-true">True (Hipparcos)</span>
-        </div>
-        <div class="reality-item">
-          <span>LSR Speed Model:</span>
-          <span id="realLsrTag" style="color:#ffd700;font-size:10px;">IAU 1985 (220 km/s)</span>
+          <span>Sun Galactic Orbit:</span>
+          <span class="reality-tag tag-true">230 km/s (8.2 kpc)</span>
         </div>
       </div>
 
-      <!-- Solar System View Controls -->
-      <div id="solarSection" style="display: grid; gap: 8px;">
+      <!-- Simulation Playback & Time Controls -->
+      <div style="display: grid; gap: 8px;">
         <div class="row">
-          <button id="play"></button>
-          <button id="rev"></button>
+          <button id="play" style="flex: 1; font-weight: 600;">Pause</button>
+          <button id="rev" style="flex: 1;">Forward</button>
           <button id="reset">Reset</button>
         </div>
-        <label>Speed <input id="speed" type="range" min="-1" max="4.5" step="0.01" value="2"> <span id="speedLabel"></span></label>
+
+        <label>Simulation Speed 
+          <input id="speed" type="range" min="-1" max="4.5" step="0.01" value="2"> 
+          <span id="speedLabel" style="color: #38bdf8; font-weight: 600;">100.0 d/s</span>
+        </label>
+
         <div class="row">
-          <input id="date" type="date"><button id="go">Go</button><button id="now">Now</button>
+          <input id="date" type="date" style="flex: 1;">
+          <button id="go">Go</button>
+          <button id="now" title="Sync live to current real-world UTC time">Now (Live)</button>
         </div>
-        <div class="row" id="presets"></div>
-        <label>Frame <select id="frame"></select></label>
-        <label>Camera follows <select id="focus"></select></label>
+
+        <!-- Categorized Cosmic Presets -->
+        <div style="margin-top: 4px;">
+          <div style="font-size: 11px; font-weight: 600; color: #cbd5e1; margin-bottom: 4px; display: flex; align-items: center; justify-content: space-between;">
+            <span>Camera View Presets</span>
+          </div>
+
+          <div style="display: flex; flex-direction: column; gap: 6px;" id="presetsContainer">
+            <!-- Galaxy Presets -->
+            <div style="font-size: 10px; color: #a5b4fc; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600;">🌌 Milky Way & Cosmic Scales</div>
+            <div class="row" id="presets-galaxy"></div>
+
+            <!-- Solar System Presets -->
+            <div style="font-size: 10px; color: #fde047; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; margin-top: 2px;">🪐 Solar System Scales</div>
+            <div class="row" id="presets-solar"></div>
+
+            <!-- Moons Presets -->
+            <div style="font-size: 10px; color: #6ee7b7; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; margin-top: 2px;">🌙 Planets & Moons (Detail)</div>
+            <div class="row" id="presets-moons"></div>
+          </div>
+        </div>
+
+        <!-- Camera Focus & Reference Frame -->
+        <label>Camera follows (Focus Body)
+          <select id="focus"></select>
+        </label>
+
+        <label>Reference Frame
+          <select id="frame"></select>
+        </label>
+
         <label>Scale mode
           <select id="scaleMode">
-            <option value="pixels" selected>Minimum Pixel Radius</option>
-            <option value="true">True Physical Scale</option>
+            <option value="pixels" selected>Minimum Pixel Radius (Visible Discs)</option>
+            <option value="true">True 1:1 Physical Scale</option>
             <option value="exaggerated">Exaggerated Scale</option>
           </select>
         </label>
+
         <label id="exagRow" style="display:none;">Exaggeration
           <input id="scaleExag" type="range" min="1" max="300" step="1" value="20">
           <span id="exagVal">20x</span>
         </label>
+
         <label>Galactic Speed Model
           <select id="solarGalaxyModel">
             ${ctx.galaxyModels
@@ -189,110 +215,68 @@ export function createPanel(root: HTMLElement, store: AppStore, ctx: PanelContex
               .join('')}
           </select>
         </label>
+
         <label>Integrator
           <select id="integrator">
-            <option value="yoshida4" selected>Yoshida 4th Order</option>
-            <option value="leapfrog">Leapfrog (2nd)</option>
+            <option value="yoshida4" selected>Yoshida 4th Order (Symplectic)</option>
+            <option value="leapfrog">Leapfrog (2nd Order)</option>
           </select>
         </label>
+
         <div class="row">
           <label><input id="relativity" type="checkbox" checked> 1PN Relativity</label>
           <label><input id="quadrupole" type="checkbox" checked> Solar J2</label>
         </div>
+
         <label>Trail length
           <select id="trailDays">
-            <option value="365.25">1 year</option><option value="730.5">2 years</option>
-            <option value="4383">12 years</option><option value="7305">20 years</option>
-            <option value="18262.5">50 years</option><option value="36525">100 years</option>
+            <option value="3">3 days (Fast Moons)</option>
+            <option value="28">28 days (Lunar Month)</option>
+            <option value="365.25">1 year (Earth)</option>
+            <option value="4383">12 years (Jupiter)</option>
+            <option value="10759">30 years (Saturn)</option>
+            <option value="29220" selected>80 years (Outer System & Corkscrew)</option>
+            <option value="36525">100 years</option>
           </select>
         </label>
-        <label><input id="trails" type="checkbox" checked> Trails</label>
+
         <div class="row">
-          <label><input id="showMilkyWay" type="checkbox"> Milky Way backdrop</label>
+          <label><input id="trails" type="checkbox" checked> Trails</label>
+          <label><input id="showMilkyWay" type="checkbox" checked> Milky Way Galaxy</label>
           <label><input id="showOortCloud" type="checkbox"> Oort Cloud (100k AU)</label>
         </div>
-        <label>Along-track compression <input id="compress" type="range" min="-2" max="0" step="0.05" value="0"> <span id="cLabel">1:1</span></label>
+
+        <label>Along-track compression (Galactic Corkscrew View)
+          <input id="compress" type="range" min="-2" max="0" step="0.05" value="0"> 
+          <span id="cLabel">1:1</span>
+        </label>
+
+        <!-- Selected Body Facts Card -->
         <div id="factsBox" class="facts-box" style="display:none;"></div>
+
+        <!-- Telemetry Readout -->
         <pre id="readout"></pre>
       </div>
+    </div>
+  `;
 
-      <!-- Milky Way Galaxy View Controls -->
-      <div id="galaxySection" style="display: none; grid-gap: 8px;">
-        <div class="row">
-          <button id="galPlay">Play</button>
-          <button id="galRev">Forward</button>
-          <button id="galReset">Reset</button>
-        </div>
-        <label>Galactic Time Speed
-          <input id="galSpeed" type="range" min="0.1" max="15" step="0.1" value="2">
-          <span id="galSpeedLabel">2.0 Myr/s</span>
-        </label>
-        <label>LSR Circular Speed Model
-          <select id="galaxyModel">
-            ${ctx.galaxyModels
-              .map(
-                (m) => `<option value="${m.id}">${m.label} - ${m.source.split('(')[0]}</option>`,
-              )
-              .join('')}
-          </select>
-        </label>
-        <label>Camera View
-          <select id="galCamera">
-            <option value="perspective" selected>3D Perspective</option>
-            <option value="face-on">Face-on (Galactic North)</option>
-            <option value="edge-on">Edge-on (Vertical Bobbing)</option>
-            <option value="follow-sun">Follow Sun (Local System)</option>
-            <option value="sgra">Sagittarius A* (Core Black Hole)</option>
-          </select>
-        </label>
-        <label>Vertical Exaggeration
-          <input id="galZExag" type="range" min="1" max="5" step="0.1" value="1">
-          <span id="galZExagVal">1.0x (True Scale)</span>
-        </label>
-        <div class="row">
-          <label><input id="showGalacticHalo" type="checkbox" checked> Stellar Halo & Globular Clusters</label>
-        </div>
+  const q = <T extends HTMLElement>(s: string) => root.querySelector(s) as T;
 
-        <div class="galaxy-info">
-          <div><strong>Sun's Galactic Orbit:</strong> ~245 Myr (Rosette)</div>
-          <div><strong>Vertical Bobbing:</strong> ~93 Myr period (±111 pc)</div>
-          <div><strong>Galactic Center:</strong> Sgr A* (8.2 kpc distance)</div>
-          <div><strong>Ecliptic Tilt:</strong> 60.2° to Galactic Midplane</div>
-          <div><strong>CMB Dipole Speed:</strong> 369.82 km/s (Planck 2020)</div>
-          <div><strong>Spherical Halo:</strong> 158 Globular Clusters (35 kpc)</div>
-        </div>
-
-        <pre id="galaxyReadout"></pre>
-      </div>
-    </div>`;
-
-  const q = <T extends HTMLElement>(sel: string) => root.querySelector<T>(sel)!;
-
-  // Tabs
-  const modeSolarBtn = q<HTMLButtonElement>('#modeSolar');
-  const modeGalaxyBtn = q<HTMLButtonElement>('#modeGalaxy');
-  const solarSection = q<HTMLDivElement>('#solarSection');
-  const galaxySection = q<HTMLDivElement>('#galaxySection');
-
-  // Dynamics mode & Reality inspector
-  const dynamicsStatus = q<HTMLSpanElement>('#dynamicsStatus');
+  const dynamicsStatus = q<HTMLElement>('#dynamicsStatus');
   const toggleDynamics = q<HTMLButtonElement>('#toggleDynamics');
   const reseedBtn = q<HTMLButtonElement>('#reseedBtn');
   const valTableBtn = q<HTMLButtonElement>('#valTableBtn');
-  const valTableBox = q<HTMLDivElement>('#valTableBox');
+  const valTableBox = q<HTMLElement>('#valTableBox');
   const closeValTable = q<HTMLButtonElement>('#closeValTable');
-  const toggleReality = q<HTMLButtonElement>('#toggleReality');
-  const realityArrow = q<HTMLSpanElement>('#realityArrow');
-  const realityInspector = q<HTMLDivElement>('#realityInspector');
-  const realPosTag = q<HTMLSpanElement>('#realPosTag');
-  const realSizeTag = q<HTMLSpanElement>('#realSizeTag');
-  const realTravelTag = q<HTMLSpanElement>('#realTravelTag');
-  const realLsrTag = q<HTMLSpanElement>('#realLsrTag');
 
-  // Solar elements
+  const toggleReality = q<HTMLButtonElement>('#toggleReality');
+  const realityInspector = q<HTMLElement>('#realityInspector');
+  const realityArrow = q<HTMLElement>('#realityArrow');
+  const realPosTag = q<HTMLElement>('#realPosTag');
+
   const play = q<HTMLButtonElement>('#play'),
-    rev = q<HTMLButtonElement>('#rev');
-  const speed = q<HTMLInputElement>('#speed'),
+    rev = q<HTMLButtonElement>('#rev'),
+    speed = q<HTMLInputElement>('#speed'),
     speedLabel = q<HTMLSpanElement>('#speedLabel');
   const frameSel = q<HTMLSelectElement>('#frame'),
     focusSel = q<HTMLSelectElement>('#focus');
@@ -310,34 +294,29 @@ export function createPanel(root: HTMLElement, store: AppStore, ctx: PanelContex
   const out = q<HTMLPreElement>('#readout');
   const solarGalaxyModel = q<HTMLSelectElement>('#solarGalaxyModel');
 
-  // Galaxy elements
-  const galPlay = q<HTMLButtonElement>('#galPlay'),
-    galRev = q<HTMLButtonElement>('#galRev'),
-    galReset = q<HTMLButtonElement>('#galReset');
-  const galSpeed = q<HTMLInputElement>('#galSpeed'),
-    galSpeedLabel = q<HTMLSpanElement>('#galSpeedLabel');
-  const galCamera = q<HTMLSelectElement>('#galCamera');
-  const galZExag = q<HTMLInputElement>('#galZExag'),
-    galZExagVal = q<HTMLSpanElement>('#galZExagVal');
-  const showGalacticHaloIn = q<HTMLInputElement>('#showGalacticHalo');
-  const galOut = q<HTMLPreElement>('#galaxyReadout');
-  const galaxyModel = q<HTMLSelectElement>('#galaxyModel');
-
   fill(frameSel, ctx.frames);
   fill(focusSel, ctx.focuses);
-  q<HTMLDivElement>('#presets').innerHTML = ctx.presets
-    .map((p) => `<button data-preset="${p.id}">${p.label}</button>`)
-    .join('');
+
+  // Distribute presets into categories
+  const galPresets = ctx.presets.filter((p) => p.category === 'galaxy');
+  const solPresets = ctx.presets.filter((p) => p.category === 'solar');
+  const moonPresets = ctx.presets.filter((p) => p.category === 'moons');
+
+  const renderPresetButtons = (el: HTMLElement | null, list: Option[]) => {
+    if (!el) return;
+    el.innerHTML = list
+      .map((p) => `<button data-preset="${p.id}" style="font-size: 11px; padding: 3px 7px;">${p.label}</button>`)
+      .join('');
+  };
+
+  renderPresetButtons(q<HTMLElement>('#presets-galaxy'), galPresets);
+  renderPresetButtons(q<HTMLElement>('#presets-solar'), solPresets);
+  renderPresetButtons(q<HTMLElement>('#presets-moons'), moonPresets);
+
   dateIn.value = new Date().toISOString().slice(0, 10);
 
   const sync = () => {
     const s = store.get();
-    const isSolar = s.mode === 'solar';
-
-    modeSolarBtn.classList.toggle('active', isSolar);
-    modeGalaxyBtn.classList.toggle('active', !isSolar);
-    solarSection.style.display = isSolar ? 'grid' : 'none';
-    galaxySection.style.display = !isSolar ? 'grid' : 'none';
 
     // Dynamics badge & inspector
     if (s.dynamicsMode === 'ephemeris') {
@@ -348,7 +327,7 @@ export function createPanel(root: HTMLElement, store: AppStore, ctx: PanelContex
     } else {
       dynamicsStatus.textContent = 'Yoshida-4 N-Body';
       dynamicsStatus.className = 'status-badge badge-sim';
-      realPosTag.textContent = 'True (N-body 1PN)';
+      realPosTag.textContent = 'True Float64 N-Body';
       realPosTag.className = 'reality-tag tag-true';
     }
 
@@ -356,27 +335,9 @@ export function createPanel(root: HTMLElement, store: AppStore, ctx: PanelContex
     realityInspector.style.display = s.showRealityInspector ? 'grid' : 'none';
     realityArrow.textContent = s.showRealityInspector ? '▴' : '▾';
 
-    realSizeTag.textContent =
-      s.scaleMode === 'true' ? 'True Physical' : `Scaled (${s.scaleMode})`;
-    realSizeTag.className =
-      s.scaleMode === 'true' ? 'reality-tag tag-true' : 'reality-tag tag-scaled';
-
-    const compRatio = Math.round(1 / s.compress);
-    realTravelTag.textContent =
-      compRatio === 1 ? 'True (1:1)' : `Scaled (1:${compRatio} view)`;
-    realTravelTag.className =
-      compRatio === 1 ? 'reality-tag tag-true' : 'reality-tag tag-scaled';
-
-    const activeModel = ctx.galaxyModels.find((m) => m.id === s.galaxyModelId);
-    if (activeModel) {
-      realLsrTag.textContent = activeModel.label;
-      galaxyModel.value = s.galaxyModelId;
-      solarGalaxyModel.value = s.galaxyModelId;
-    }
-
-    // Solar sync
     play.textContent = s.playing ? 'Pause' : 'Play';
     rev.textContent = s.reversed ? 'Backward' : 'Forward';
+    speed.value = String(Math.log10(s.speed));
     speedLabel.textContent =
       s.speed >= 365.25 ? `${(s.speed / 365.25).toFixed(1)} yr/s` : `${s.speed.toFixed(1)} d/s`;
     frameSel.value = s.frame;
@@ -391,21 +352,7 @@ export function createPanel(root: HTMLElement, store: AppStore, ctx: PanelContex
     if (showOortCloudIn) showOortCloudIn.checked = !!s.showOortCloud;
     const ratio = Math.round(1 / s.compress);
     cLabel.textContent = ratio === 1 ? '1:1' : `1:${ratio} (visual only)`;
-
-    // Galaxy sync
-    galPlay.textContent = s.playing ? 'Pause' : 'Play';
-    galRev.textContent = s.reversed ? 'Backward' : 'Forward';
-    galSpeed.value = String(s.galaxySpeed);
-    galSpeedLabel.textContent = `${s.galaxySpeed.toFixed(1)} Myr/s`;
-    galCamera.value = s.galaxyCamera;
-    galZExag.value = String(s.galaxyZExag);
-    galZExagVal.textContent =
-      s.galaxyZExag === 1 ? '1.0x (True Scale)' : `${s.galaxyZExag.toFixed(1)}x`;
-    if (showGalacticHaloIn) showGalacticHaloIn.checked = s.showGalacticHalo !== false;
   };
-
-  modeSolarBtn.onclick = () => store.set('mode', 'solar');
-  modeGalaxyBtn.onclick = () => store.set('mode', 'galaxy');
 
   // Dynamics mode actions
   toggleDynamics.onclick = () =>
@@ -424,10 +371,9 @@ export function createPanel(root: HTMLElement, store: AppStore, ctx: PanelContex
     store.set('galaxyModelId', val);
     ctx.onGalaxyModelChange?.(val);
   };
-  galaxyModel.onchange = () => handleGalaxyModel(galaxyModel.value);
   solarGalaxyModel.onchange = () => handleGalaxyModel(solarGalaxyModel.value);
 
-  // Solar actions
+  // Playback & input actions
   play.onclick = () => store.set('playing', !store.get().playing);
   rev.onclick = () => store.set('reversed', !store.get().reversed);
   q('#reset').onclick = ctx.onReset;
@@ -458,22 +404,6 @@ export function createPanel(root: HTMLElement, store: AppStore, ctx: PanelContex
       store.set('showOortCloud', (e.target as HTMLInputElement).checked);
   }
 
-  // Galaxy actions
-  galPlay.onclick = () => store.set('playing', !store.get().playing);
-  galRev.onclick = () => store.set('reversed', !store.get().reversed);
-  galReset.onclick = () => ctx.onGalaxyReset?.();
-  galSpeed.oninput = () => store.set('galaxySpeed', Number(galSpeed.value));
-  galCamera.onchange = () => {
-    const cam = galCamera.value as GalaxyCamera;
-    store.set('galaxyCamera', cam);
-    ctx.onGalaxyCamera?.(cam);
-  };
-  galZExag.oninput = () => store.set('galaxyZExag', Number(galZExag.value));
-  if (showGalacticHaloIn) {
-    showGalacticHaloIn.onchange = (e) =>
-      store.set('showGalacticHalo', (e.target as HTMLInputElement).checked);
-  }
-
   const intSel = q<HTMLSelectElement>('#integrator');
   const relIn = q<HTMLInputElement>('#relativity');
   const quadIn = q<HTMLInputElement>('#quadrupole');
@@ -488,7 +418,7 @@ export function createPanel(root: HTMLElement, store: AppStore, ctx: PanelContex
   relIn.onchange = emitPhysics;
   quadIn.onchange = emitPhysics;
 
-  q('#presets').onclick = (e) => {
+  q('#presetsContainer').onclick = (e) => {
     const t = e.target as HTMLElement;
     if (t.tagName === 'BUTTON' && t.dataset['preset']) {
       store.set('preset', t.dataset['preset']!);
@@ -500,74 +430,66 @@ export function createPanel(root: HTMLElement, store: AppStore, ctx: PanelContex
 
   return {
     update(d: PanelData): void {
-      const isSolar = store.get().mode === 'solar';
+      dateIn.value = d.dateUtc ? d.dateUtc.slice(0, 10) : '';
 
-      if (isSolar) {
-        dateIn.value = d.dateUtc ? d.dateUtc.slice(0, 10) : '';
+      const gr = d.galaxyReadout;
+      const galHeader = gr
+        ? [
+            `Galactic Position: R=${gr.rKpc.toFixed(2)} kpc | z=${gr.zPc >= 0 ? '+' : ''}${gr.zPc.toFixed(0)} pc`,
+            `Galactic Velocity: ${gr.speedKms.toFixed(1)} km/s (Azimuthal ${gr.vAzimuthalKms.toFixed(1)} km/s)`,
+            `Sun Midplane:      in ${gr.timeToNextMidplaneMyr.toFixed(1)} Myr (${gr.vertPhase.toUpperCase()})`,
+            '------------------------------------------------',
+          ]
+        : [];
 
-        const lines: string[] = [
-          `Date (UTC)     ${d.dateUtc}`,
-          `Sun-SSB dist   ${(d.sunBaryAu * AU_KM).toLocaleString('en-US', { maximumFractionDigits: 0 })} km (${(d.sunBaryAu * AU_KM / ctx.sunRadiusKm).toFixed(2)} R_sun)`,
-          `Sun speed      ${d.sunSpeedKms.toFixed(3)} km/s`,
-          `|ΔE/E|         ${d.energyDrift.toExponential(2)}`,
-          `|ΔL/L|         ${d.angMomDrift.toExponential(2)}`,
-          d.busy ? 'SIMULATION BUSY' : '',
-          '',
-          'Body         Dist(AU)   Dist(km)      Speed(km/s)',
-          '------------------------------------------------',
-          ...d.rows.map(
-            (r) =>
-              `${r.name.padEnd(12)} ${r.rAu.toFixed(4).padStart(9)} ${(r.rAu * AU_KM).toLocaleString('en-US', { maximumFractionDigits: 0 }).padStart(13)} ${r.vKms.toFixed(2).padStart(11)}`,
-          ),
-        ];
-        out.textContent = lines.filter(Boolean).join('\n');
+      const lines: string[] = [
+        `Date (UTC)     ${d.dateUtc}`,
+        `Sun-SSB dist   ${(d.sunBaryAu * AU_KM).toLocaleString('en-US', { maximumFractionDigits: 0 })} km (${((d.sunBaryAu * AU_KM) / ctx.sunRadiusKm).toFixed(2)} R_sun)`,
+        `Sun speed      ${d.sunSpeedKms.toFixed(3)} km/s`,
+        `|ΔE/E|         ${d.energyDrift.toExponential(2)}`,
+        `|ΔL/L|         ${d.angMomDrift.toExponential(2)}`,
+        d.busy ? 'SIMULATION BUSY' : '',
+        ...galHeader,
+        '',
+        'Body         Dist(AU)   Dist(km)      Speed(km/s)',
+        '------------------------------------------------',
+        ...d.rows.map(
+          (r) =>
+            `${r.name.padEnd(12)} ${r.rAu.toFixed(4).padStart(9)} ${(r.rAu * AU_KM).toLocaleString('en-US', { maximumFractionDigits: 0 }).padStart(13)} ${r.vKms.toFixed(2).padStart(11)}`,
+        ),
+      ];
+      out.textContent = lines.filter(Boolean).join('\n');
 
-        // Selection facts card
-        if (d.selectedFacts) {
-          const sf = d.selectedFacts;
-          factsBox.style.display = 'block';
-          factsBox.innerHTML = `
-            <div style="display:flex;justify-content:space-between;align-items:center;">
-              <strong style="font-size:1.1em;color:#ffd700;">${sf.name}</strong>
-              <button id="closeFacts" style="padding:1px 6px;font-size:0.8em;">✕</button>
+      // Selection facts card
+      if (d.selectedFacts) {
+        const sf = d.selectedFacts;
+        factsBox.style.display = 'block';
+        factsBox.innerHTML = `
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <strong style="font-size:1.15em;color:#ffd700;">${sf.name}</strong>
+            <button id="closeFacts" style="padding:1px 6px;font-size:0.8em;">✕</button>
+          </div>
+          <div style="font-size:0.85em;line-height:1.45;margin-top:6px;">
+            <div><strong>Dist to Sun:</strong> ${sf.distSunAu.toFixed(4)} AU (${(sf.distSunAu * AU_KM).toLocaleString('en-US', { maximumFractionDigits: 0 })} km)</div>
+            <div><strong>Light Travel:</strong> ${sf.lightMinutes.toFixed(2)} light-min</div>
+            <div><strong>Orbital Speed:</strong> ${sf.speedKms.toFixed(2)} km/s</div>
+            <div><strong>Semi-major axis:</strong> ${sf.elements.a.toFixed(4)} AU</div>
+            <div><strong>Eccentricity:</strong> ${sf.elements.e.toFixed(4)}</div>
+            <div><strong>Orbital Period:</strong> ${sf.elements.period >= 365.25 ? `${(sf.elements.period / 365.25).toFixed(2)} yr` : `${sf.elements.period.toFixed(2)} days`}</div>
+            <div><strong>Axial Tilt:</strong> ${sf.axialTiltDeg.toFixed(2)}°</div>
+            <div><strong>Sidereal Day:</strong> ${sf.siderealDayDays.toFixed(2)} d</div>
+            <div><strong>Subsolar Point:</strong> ${sf.subsolarLatDeg.toFixed(1)}° lat, ${sf.subsolarLonDeg.toFixed(1)}° lon</div>
+            <div style="margin-top:4px;border-top:1px dashed rgba(255,255,255,0.15);padding-top:4px;">
+              ${Object.entries(sf.facts)
+                .map(([k, v]) => `<div><strong>${k}:</strong> ${v}</div>`)
+                .join('')}
             </div>
-            <div style="font-size:0.85em;line-height:1.4;margin-top:6px;">
-              <div><strong>Dist to Sun:</strong> ${sf.distSunAu.toFixed(3)} AU (${sf.lightMinutes.toFixed(1)} light-min)</div>
-              <div><strong>Orbital Speed:</strong> ${sf.speedKms.toFixed(2)} km/s</div>
-              <div><strong>Semi-major axis:</strong> ${sf.elements.a.toFixed(3)} AU</div>
-              <div><strong>Eccentricity:</strong> ${sf.elements.e.toFixed(4)}</div>
-              <div><strong>Period:</strong> ${(sf.elements.period / 365.25).toFixed(2)} yr (${sf.elements.period.toFixed(1)} d)</div>
-              <div><strong>Axial Tilt:</strong> ${sf.axialTiltDeg.toFixed(2)}°</div>
-              <div><strong>Sidereal Day:</strong> ${sf.siderealDayDays.toFixed(2)} d</div>
-              <div><strong>Subsolar Point:</strong> ${sf.subsolarLatDeg.toFixed(1)}° lat, ${sf.subsolarLonDeg.toFixed(1)}° lon</div>
-              <div style="margin-top:4px;border-top:1px dashed rgba(255,255,255,0.15);padding-top:4px;">
-                ${Object.entries(sf.facts)
-                  .map(([k, v]) => `<div><strong>${k}:</strong> ${v}</div>`)
-                  .join('')}
-              </div>
-            </div>
-          `;
-          const closeBtn = q<HTMLButtonElement>('#closeFacts');
-          if (closeBtn) closeBtn.onclick = () => store.set('selected', null);
-        } else {
-          factsBox.style.display = 'none';
-        }
-      } else if (d.galaxyReadout) {
-        const gr = d.galaxyReadout;
-        galOut.textContent = [
-          `Time T          ${gr.tMyr >= 0 ? '+' : ''}${gr.tMyr.toFixed(2)} Myr`,
-          `Radius R        ${gr.rKpc.toFixed(3)} kpc`,
-          `Height z        ${gr.zPc >= 0 ? '+' : ''}${gr.zPc.toFixed(1)} pc`,
-          `Galactic speed  ${gr.speedKms.toFixed(2)} km/s`,
-          `  v_radial      ${gr.vRadialKms.toFixed(2)} km/s`,
-          `  v_azimuthal   ${gr.vAzimuthalKms.toFixed(2)} km/s`,
-          `  v_z (vertical)${gr.vZKms.toFixed(2)} km/s`,
-          `Azimuth phi     ${gr.phiDeg.toFixed(1)}°`,
-          `Vertical phase  ${gr.vertPhase.toUpperCase()}`,
-          `Next midplane   in ${gr.timeToNextMidplaneMyr.toFixed(1)} Myr`,
-          `Energy drift    ${gr.energyDrift.toExponential(2)}`,
-          `Ang.mom. drift  ${gr.angMomDrift.toExponential(2)}`,
-        ].join('\n');
+          </div>
+        `;
+        const closeBtn = q<HTMLButtonElement>('#closeFacts');
+        if (closeBtn) closeBtn.onclick = () => store.set('selected', null);
+      } else {
+        factsBox.style.display = 'none';
       }
     },
   };

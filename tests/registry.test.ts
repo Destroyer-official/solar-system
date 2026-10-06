@@ -1,5 +1,5 @@
 import { it, expect } from 'vitest';
-import { loadSystem } from '@/sim/registry';
+import { loadSystem, ALL_BODIES } from '@/sim/registry';
 import { centerOfMass } from '@/physics/diagnostics';
 import { PHASE1_BODIES } from './fixtures/phase1';
 
@@ -13,4 +13,15 @@ it('Sun is first (heaviest) and is NOT at the origin', () => {
   const m = loadSystem(PHASE1_BODIES);
   expect(m.ids[0]).toBe('sun');
   expect(Math.hypot(m.state.pos[0]!, m.state.pos[1]!, m.state.pos[2]!)).toBeGreaterThan(1e-3);
+});
+
+it('loads ALL_BODIES including dwarf planets and all moons', () => {
+  const m = loadSystem(ALL_BODIES);
+  expect(m.ids.length).toBe(32);
+  expect(m.ids).toContain('moon');
+  expect(m.ids).toContain('io');
+  expect(m.ids).toContain('europa');
+  expect(m.ids).toContain('titan');
+  expect(m.ids).toContain('phobos');
+  expect(m.ids).toContain('pluto');
 });

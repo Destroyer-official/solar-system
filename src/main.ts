@@ -1,6 +1,6 @@
 import './style.css';
 import { dateToJd, jdToDate, auDayToKms } from '@/data/constants';
-import { loadSystem } from '@/sim/registry';
+import { loadSystem, ALL_BODIES } from '@/sim/registry';
 import { SimClient } from '@/sim/simClient';
 import { GalaxySim } from '@/sim/galaxySim';
 import { EphemerisProvider } from '@/sim/ephemeris';
@@ -17,7 +17,8 @@ import { GALAXY_MODELS } from '@/data/galaxy';
 const HISTORY_CAP = 20_000;
 const MAX_JUMP_DAYS = 73_050;
 
-const model = loadSystem();
+// Load all 32 celestial bodies: Sun, 8 planets, Pluto, and all 22 moons
+const model = loadSystem(ALL_BODIES);
 const ephemeris = new EphemerisProvider(model);
 const validationTable = ephemeris.getValidationTable();
 
@@ -89,6 +90,7 @@ function viewPreset(id: string): void {
   viewer.setView(p.dir, p.dist);
   store.set('trailDays', p.trailDays);
 }
+
 function applyPreset(id: string): void {
   const p = validPresets[id] ?? PRESETS[id]!;
   store.set('preset', id);
@@ -99,6 +101,7 @@ function applyPreset(id: string): void {
   }
   viewPreset(id);
 }
+
 function applyFrameDefaults(id: string): void {
   if (id.startsWith('galactic') || id.startsWith('cmb')) {
     store.set('focus', 'sun');
@@ -121,10 +124,14 @@ const panel = createPanel(document.getElementById('panel')!, store, {
   sunRadiusKm: model.radiusKm[sun]!,
   frames: frames.map((f) => ({ id: f.id, label: f.label })),
   focuses: [
-    { id: 'barycenter', label: 'Barycenter' },
+    { id: 'barycenter', label: 'Solar System Barycenter' },
     ...model.ids.map((id, i) => ({ id, label: model.names[i]! })),
   ],
-  presets: Object.entries(validPresets).map(([id, p]) => ({ id, label: p.label })),
+  presets: Object.entries(validPresets).map(([id, p]) => ({
+    id,
+    label: p.label,
+    category: p.category ?? 'solar',
+  })),
   galaxyModels: GALAXY_MODELS,
   validationTable,
   onReset: () => client.reset(),
@@ -145,23 +152,20 @@ const panel = createPanel(document.getElementById('panel')!, store, {
 });
 
 store.subscribe((s, changed) => {
-  if (changed === 'mode') {
-    if (s.mode === 'galaxy') {
-      viewer.setGalaxyView(s.galaxyCamera, galaxySim.getState(), s.galaxyZExag);
-    } else {
-      applyPreset(s.preset);
+  if (changed === 'preset') applyPreset(s.preset);
+  if (changed === 'reversed') client.newDirection();
+  if (changed === 'frame') applyFrameDefaults(s.frame);
+  if (changed === 'focus') {
+    const fIdx = focusIndex(s.focus);
+    if (fIdx >= 0) {
+      store.set('selected', s.focus);
     }
   }
-  if (changed === 'galaxyCamera' && s.mode === 'galaxy') {
-    viewer.setGalaxyView(s.galaxyCamera, galaxySim.getState(), s.galaxyZExag);
-  }
-  if (changed === 'preset' && s.mode === 'solar') applyPreset(s.preset);
-  if (changed === 'reversed') client.newDirection();
-  if (changed === 'frame' && s.mode === 'solar') applyFrameDefaults(s.frame);
   if (changed === 'dynamicsMode' && s.dynamicsMode === 'ephemeris') {
     ephemeris.interpolate(client.display.t, client.display.pos);
   }
 });
+
 applyPreset('cosmic');
 
 const P = new Float64Array(3 * model.state.n),
@@ -178,18 +182,19 @@ function tick(now: number) {
   last = now;
   const s = store.get();
 
-  if (s.mode === 'galaxy') {
-    if (s.playing) galaxySim.step(s.galaxySpeed * dtReal * (s.reversed ? -1 : 1));
-  } else {
-    if (s.dynamicsMode === 'ephemeris') {
-      if (s.playing) {
-        client.display.t += s.speed * dtReal * (s.reversed ? -1 : 1);
-      }
-      ephemeris.interpolate(client.display.t, client.display.pos);
-    } else {
-      if (s.playing) client.request(s.speed * dtReal * (s.reversed ? -1 : 1));
-      client.updateDisplay();
+  // Step both galactic motion and planetary & moon dynamics simultaneously
+  if (s.playing) {
+    galaxySim.step(s.galaxySpeed * dtReal * (s.reversed ? -1 : 1));
+  }
+
+  if (s.dynamicsMode === 'ephemeris') {
+    if (s.playing) {
+      client.display.t += s.speed * dtReal * (s.reversed ? -1 : 1);
     }
+    ephemeris.interpolate(client.display.t, client.display.pos);
+  } else {
+    if (s.playing) client.request(s.speed * dtReal * (s.reversed ? -1 : 1));
+    client.updateDisplay();
   }
 
   viewer.render(client.display, {
@@ -212,31 +217,18 @@ function tick(now: number) {
   });
 
   if (frameNo++ % 6 === 0) {
-    if (s.mode === 'galaxy') {
-      panel.update({
-        dateUtc: '',
-        sunBaryAu: 0,
-        sunSpeedKms: 0,
-        energyDrift: 0,
-        angMomDrift: 0,
-        rows: [],
-        busy: false,
-        galaxyReadout: galaxySim.computeReadout(),
-      });
-    } else {
-      const selectedFacts = s.selected ? computeBodyFacts(s.selected, client.display, model) : null;
-      panel.update({
-        dateUtc: jdToDate(model.epochJd + client.display.t).toISOString().slice(0, 19) + ' UTC',
-        sunBaryAu: client.baryDist[sun]!,
-        sunSpeedKms: sunSpeedKms(s.frame),
-        energyDrift: s.dynamicsMode === 'ephemeris' ? 0 : client.energyDrift,
-        angMomDrift: s.dynamicsMode === 'ephemeris' ? 0 : client.angMomDrift,
-        rows: relativeRows(client.display, model.names, sun),
-        busy: client.busy,
-        selectedFacts,
-        galaxyReadout: null,
-      });
-    }
+    const selectedFacts = s.selected ? computeBodyFacts(s.selected, client.display, model) : null;
+    panel.update({
+      dateUtc: jdToDate(model.epochJd + client.display.t).toISOString().slice(0, 19) + ' UTC',
+      sunBaryAu: client.baryDist[sun]!,
+      sunSpeedKms: sunSpeedKms(s.frame),
+      energyDrift: s.dynamicsMode === 'ephemeris' ? 0 : client.energyDrift,
+      angMomDrift: s.dynamicsMode === 'ephemeris' ? 0 : client.angMomDrift,
+      rows: relativeRows(client.display, model.names, sun),
+      busy: client.busy,
+      selectedFacts,
+      galaxyReadout: galaxySim.computeReadout(),
+    });
   }
   requestAnimationFrame(tick);
 }

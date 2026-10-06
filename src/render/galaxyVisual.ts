@@ -496,13 +496,24 @@ export class GalaxyVisual {
     return target.copy(this.sunMarker.position);
   }
 
+  setUnifiedMode(cameraDistAu: number, showHalo = true): void {
+    const isClose = cameraDistAu < 600;
+    // When close to the Sun, hide the large icon marker so the real 3D Sun is clean
+    this.sunMarker.visible = !isClose;
+    // The 500 Myr galactic orbit path of the Sun and Sagittarius A* are always visible
+    this.orbitLine.visible = true;
+    this.sgrAMarker.visible = true;
+    this.gridGroup.visible = !isClose;
+    this.haloGroup.visible = showHalo;
+
+    const starMat = this.starsPoints.material as THREE.PointsMaterial;
+    const bulgeMat = this.bulgePoints.material as THREE.PointsMaterial;
+    starMat.size = isClose ? 1.5 : 0.14;
+    bulgeMat.size = isClose ? 2.2 : 0.20;
+  }
+
   setSolarMode(isSolar: boolean): void {
-    this.sunMarker.visible = !isSolar;
-    this.orbitLine.visible = !isSolar;
-    this.gridGroup.visible = !isSolar;
-    this.haloGroup.visible = !isSolar;
-    (this.starsPoints.material as THREE.PointsMaterial).size = isSolar ? 1.6 : 0.12;
-    (this.bulgePoints.material as THREE.PointsMaterial).size = isSolar ? 2.4 : 0.18;
+    this.setUnifiedMode(isSolar ? 50 : 2000, true);
   }
 
   setHaloVisible(visible: boolean): void {

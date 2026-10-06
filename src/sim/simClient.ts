@@ -76,6 +76,8 @@ export class SimClient {
     const s = model.state;
     this.send({
       type: 'init',
+      bodies: model.bodies ? [...model.bodies] : undefined,
+      physical: model.physicalMap,
       ids: model.ids,
       t: s.t,
       gm: s.gm.slice(),

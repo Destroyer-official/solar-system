@@ -161,24 +161,25 @@ export function createViewer(
     galaxyVisual.setOrbitPath(path);
   }
 
-  function setGalaxyView(viewType: string, state?: GalacticOrbitState, zExag = 1): void {
+  function setGalaxyView(viewType: string, _state?: GalacticOrbitState, _zExag = 1): void {
+    const sgrPos = galaxyVisual.group.position;
     if (viewType === 'face-on') {
-      camera.position.set(0, 0.01, 32);
-      controls.target.set(0, 0, 0);
+      camera.position.set(sgrPos.x, sgrPos.y + 0.01, sgrPos.z + 2800);
+      controls.target.copy(sgrPos);
     } else if (viewType === 'edge-on') {
-      camera.position.set(0, -28, 0);
-      controls.target.set(0, 0, 0);
-    } else if (viewType === 'follow-sun' && state) {
-      const gz = state.z * zExag;
-      controls.target.set(state.x, state.y, gz);
-      camera.position.set(state.x + 1.2, state.y - 2.2, gz + 1.0);
+      camera.position.set(sgrPos.x, sgrPos.y - 2600, sgrPos.z);
+      controls.target.copy(sgrPos);
+    } else if (viewType === 'follow-sun') {
+      const sunPos = visuals[0] ? visuals[0].group.position : new THREE.Vector3();
+      controls.target.copy(sunPos);
+      camera.position.set(sunPos.x + 20, sunPos.y - 45, sunPos.z + 25);
     } else if (viewType === 'sgra') {
-      camera.position.set(0, -3.5, 1.2);
-      controls.target.set(0, 0, 0);
+      controls.target.copy(sgrPos);
+      camera.position.set(sgrPos.x, sgrPos.y - 350, sgrPos.z + 120);
     } else {
-      // perspective
-      camera.position.set(-14, -20, 15);
-      controls.target.set(0, 0, 0);
+      // perspective overview
+      camera.position.set(sgrPos.x - 1400, sgrPos.y - 1800, sgrPos.z + 1500);
+      controls.target.copy(sgrPos);
     }
     controls.update();
   }
@@ -189,38 +190,7 @@ export function createViewer(
   const w: [number, number, number] = [0, 0, 0];
 
   function render(s: SystemState, v: ViewState): void {
-    const isGalaxy = v.mode === 'galaxy';
-
-    if (isGalaxy) {
-      galaxyVisual.setVisible(true);
-      galaxyVisual.setSolarMode(false);
-      galaxyVisual.setHaloVisible(v.showGalacticHalo !== false);
-      galaxyVisual.group.position.set(0, 0, 0);
-      galaxyVisual.group.rotation.set(0, 0, 0);
-      galaxyVisual.group.scale.set(1, 1, 1);
-
-      oortVisual.setVisible(false);
-      for (const vis of visuals) vis.group.visible = false;
-      for (const t of trails) t.line.visible = false;
-      bary.visible = false;
-      sunLight.visible = false;
-
-      if (v.galaxyZExag !== undefined) {
-        galaxyVisual.setVerticalExaggeration(v.galaxyZExag);
-      }
-      if (v.galaxyState) {
-        galaxyVisual.update(v.galaxyState);
-        if (v.galaxyCamera === 'follow-sun') {
-          const gz = v.galaxyState.z * (v.galaxyZExag ?? 1);
-          controls.target.set(v.galaxyState.x, v.galaxyState.y, gz);
-        }
-      }
-      controls.update();
-      renderer.render(scene, camera);
-      return;
-    }
-
-    // Solar system mode: all bodies and trails active
+    // Unified cosmological scene: all celestial bodies, moons, and Milky Way active
     for (const vis of visuals) vis.group.visible = true;
     sunLight.visible = true;
     bary.visible = true;
@@ -275,11 +245,14 @@ export function createViewer(
       oortVisual.setVisible(false);
     }
 
-    // Milky Way Galaxy background in Solar mode
+    // Milky Way Galaxy in unified cosmos
     if (v.showMilkyWay !== false) {
       galaxyVisual.setVisible(true);
-      galaxyVisual.setSolarMode(true);
-      galaxyVisual.setHaloVisible(false); // keep solar background clear
+      const camDist = camera.position.length();
+      galaxyVisual.setUnifiedMode(camDist, v.showGalacticHalo !== false);
+      if (v.galaxyZExag !== undefined) {
+        galaxyVisual.setVerticalExaggeration(v.galaxyZExag);
+      }
 
       const S_GAL = 60.0;
       const [GX_SIM, GY_SIM, GZ_SIM] = GALACTIC_AXES_IN_SIM;
@@ -317,6 +290,10 @@ export function createViewer(
       galaxyVisual.group.position.copy(galPos);
       galaxyVisual.group.rotation.setFromRotationMatrix(mRotScene);
       galaxyVisual.group.scale.set(S_GAL, S_GAL, S_GAL);
+
+      if (v.galaxyState) {
+        galaxyVisual.update(v.galaxyState);
+      }
     } else {
       galaxyVisual.setVisible(false);
     }
