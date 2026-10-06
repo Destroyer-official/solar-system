@@ -1,0 +1,8 @@
+{
+  "id": "jupiter",
+  "name": "Jupiter",
+  "gmKm3S2": 126712764.1,
+  "radiusKm": 71492,
+  "color": "#d9a066",
+  "initial": { "type": "elements", "parent": "sun", "aAu": 5.202887, "e": 0.04838624, "incDeg": 1.30439695 }
+}

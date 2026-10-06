@@ -6,3 +6,39 @@ body,
   background: #000;
   overflow: hidden;
 }
+#panel {
+  position: fixed;
+  top: 12px;
+  left: 12px;
+  color: #ddd;
+  font: 13px system-ui, sans-serif;
+}
+.panel {
+  background: rgba(0, 0, 0, 0.65);
+  padding: 12px;
+  border-radius: 8px;
+  display: grid;
+  gap: 8px;
+  width: 300px;
+}
+.panel h1 {
+  font-size: 14px;
+  margin: 0;
+}
+.row {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+button {
+  background: #223;
+  color: #ddd;
+  border: 1px solid #446;
+  border-radius: 4px;
+  padding: 4px 8px;
+  cursor: pointer;
+}
+pre {
+  margin: 0;
+  font: 12px ui-monospace, monospace;
+}

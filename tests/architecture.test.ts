@@ -24,3 +24,11 @@ it('physics/ and frames/ never import three, DOM, or higher layers', () => {
 it('render/ never imports physics internals', () => {
   forbid('src/render', [/from ['"]@\/physics\/(integrators|forces)/]);
 });
+
+it('sim/ never imports render or ui', () => {
+  forbid('src/sim', [/from ['"]@\/(render|ui)/, /from ['"]three['"]/]);
+});
+
+it('data/ imports nothing from other layers', () => {
+  forbid('src/data', [/from ['"]@\/(physics|sim|render|ui|frames)/]);
+});
