@@ -6,13 +6,33 @@ export type InitialState =
   /** Barycentric (SSB), J2000 ecliptic axes, AU and AU/day, at epochJd (TDB). */
   | { type: 'vectors'; epochJd: number; position: Triple; velocity: Triple };
 
+export interface RotationJson {
+  poleRaDeg: number;
+  poleDecDeg: number;
+  poleRaRateDegPerCy?: number;
+  poleDecRateDegPerCy?: number;
+  w0Deg: number; // prime meridian angle at J2000
+  wRateDegPerDay: number; // negative = retrograde
+}
+
+export interface PhysicalJson {
+  rotation?: RotationJson;
+  flattening?: number; // (a - c) / a
+  j2?: number; // used by Phase 5 moons
+  texture?: string; // /textures/earth.jpg
+  ring?: { innerKm: number; outerKm: number; texture: string };
+  facts?: Record<string, string>;
+}
+
 export interface BodyJson {
   id: string;
   name: string;
+  parent?: string;
   gmKm3S2: number; // NASA units, converted once in code
   radiusKm: number; // equatorial
   color: string;
   note?: string;
   source?: string;
+  gmIsSystem?: boolean;
   initial: InitialState;
 }

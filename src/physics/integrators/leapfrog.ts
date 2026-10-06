@@ -18,9 +18,8 @@ export class Leapfrog implements Integrator {
     this.accel(s, forces);
     for (let k = 0; k < m; k++) s.vel[k] = s.vel[k]! + h * this.acc[k]!;
     for (let k = 0; k < m; k++) s.pos[k] = s.pos[k]! + dt * s.vel[k]!;
+    s.t += dt;
     this.accel(s, forces);
     for (let k = 0; k < m; k++) s.vel[k] = s.vel[k]! + h * this.acc[k]!;
-
-    s.t += dt;
   }
 }

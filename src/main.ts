@@ -102,7 +102,7 @@ applyPreset('giants');
 const P = new Float64Array(3 * model.state.n),
   V = new Float64Array(3 * model.state.n);
 function sunSpeedKms(frameId: string): number {
-  transformState(frameById.get(frameId)!, client.state, P, V);
+  transformState(frameById.get(frameId)!, client.display, P, V);
   return auDayToKms(Math.hypot(V[3 * sun]!, V[3 * sun + 1]!, V[3 * sun + 2]!));
 }
 
@@ -113,8 +113,9 @@ function tick(now: number) {
   last = now;
   const s = store.get();
   if (s.playing) client.request(s.speed * dtReal * (s.reversed ? -1 : 1));
+  client.updateDisplay();
 
-  viewer.render(client.state, {
+  viewer.render(client.display, {
     frame: frameById.get(s.frame)!,
     focus: focusIndex(s.focus),
     trails: s.trails,
@@ -124,12 +125,12 @@ function tick(now: number) {
 
   if (frameNo++ % 6 === 0) {
     panel.update({
-      dateUtc: jdToDate(model.epochJd + client.state.t).toISOString().slice(0, 19) + ' UTC',
+      dateUtc: jdToDate(model.epochJd + client.display.t).toISOString().slice(0, 19) + ' UTC',
       sunBaryAu: client.baryDist[sun]!,
       sunSpeedKms: sunSpeedKms(s.frame),
       energyDrift: client.energyDrift,
       angMomDrift: client.angMomDrift,
-      rows: relativeRows(client.state, model.names, sun),
+      rows: relativeRows(client.display, model.names, sun),
       busy: client.busy,
     });
   }

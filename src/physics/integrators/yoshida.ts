@@ -1,0 +1,28 @@
+import type { ForceModel, Integrator, SystemState } from '../types';
+
+const c = Math.cbrt(2);
+const W4 = [1 / (2 - c), -c / (2 - c), 1 / (2 - c)]; // sums to 1
+
+// Yoshida (1990), 6th order, "solution A"
+const a1 = -1.17767998417887,
+  a2 = 0.235573213359357,
+  a3 = 0.78451361047756;
+const a0 = 1 - 2 * (a1 + a2 + a3);
+const W6 = [a3, a2, a1, a0, a1, a2, a3];
+
+export class Composition implements Integrator {
+  readonly name: string;
+  private readonly base: Integrator;
+  private readonly w: readonly number[];
+  constructor(name: string, base: Integrator, weights: readonly number[]) {
+    this.name = name;
+    this.base = base;
+    this.w = weights;
+  }
+  step(s: SystemState, forces: ForceModel[], dt: number): void {
+    for (const w of this.w) this.base.step(s, forces, w * dt);
+  }
+}
+
+export const yoshida4 = (base: Integrator) => new Composition('yoshida4', base, W4);
+export const yoshida6 = (base: Integrator) => new Composition('yoshida6', base, W6);

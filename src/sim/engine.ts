@@ -20,7 +20,7 @@ export class Engine {
   private readonly initial: SystemState;
   private readonly e0: number;
   private readonly l0: number;
-  private remainder = 0;
+  carry = 0; // target time minus state time; always in (-dt, dt)
 
   constructor(
     state: SystemState,
@@ -28,42 +28,36 @@ export class Engine {
     integrator: Integrator,
     maxDt = 1,
     maxSteps = 5000,
-    fixedDt?: number,
   ) {
     this.state = state;
     this.forces = forces;
     this.integrator = integrator;
     this.maxDt = maxDt;
     this.maxSteps = maxSteps;
-    this.fixedDt = fixedDt;
     this.initial = cloneState(state);
     this.e0 = totalEnergy(state);
     this.l0 = Math.hypot(...angularMomentum(state));
   }
 
+  /** Advance with fixed step dt. Deterministic, frame-rate independent. */
+  advanceFixed(days: number, dt: number): number {
+    const total = this.carry + days;
+    let n = Math.trunc(total / dt);
+    n = Math.max(-this.maxSteps, Math.min(this.maxSteps, n));
+    const h = n < 0 ? -dt : dt;
+    for (let i = 0; i < Math.abs(n); i++) {
+      this.integrator.step(this.state, this.forces, h);
+      this.onStep?.(this.state);
+    }
+    this.carry = (total - n * dt) % dt; // JS % keeps the sign; a capped backlog is dropped
+    return n * dt;
+  }
+
   /** Advance by `days` (negative = backwards). Returns the days actually advanced. */
   advance(days: number): number {
     if (days === 0) return 0;
-    const stepLimitDt = this.fixedDt ?? this.maxDt;
-    const limit = this.maxSteps * stepLimitDt;
+    const limit = this.maxSteps * this.maxDt;
     const d = Math.max(-limit, Math.min(limit, days));
-
-    if (this.fixedDt && this.fixedDt > 0) {
-      this.remainder += d;
-      const stepSign = Math.sign(this.remainder);
-      const stepSize = stepSign * this.fixedDt;
-      const numSteps = Math.min(
-        this.maxSteps,
-        Math.floor(Math.abs(this.remainder) / this.fixedDt),
-      );
-      for (let i = 0; i < numSteps; i++) {
-        this.integrator.step(this.state, this.forces, stepSize);
-        this.onStep?.(this.state);
-      }
-      this.remainder -= numSteps * stepSize;
-      return numSteps * stepSize;
-    }
-
     const steps = Math.max(1, Math.ceil(Math.abs(d) / this.maxDt));
     const dt = d / steps;
     for (let i = 0; i < steps; i++) {
@@ -77,7 +71,7 @@ export class Engine {
     this.state.t = this.initial.t;
     this.state.pos.set(this.initial.pos);
     this.state.vel.set(this.initial.vel);
-    this.remainder = 0;
+    this.carry = 0;
   }
 
   diagnostics(): Diagnostics {
