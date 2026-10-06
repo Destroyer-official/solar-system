@@ -63,7 +63,7 @@ describe('Spherical Components of Solar System & Galaxy', () => {
   });
 
   it('Tilt: solar system ecliptic is tilted at 60.2° relative to the Milky Way midplane', () => {
-    const [GX_SIM, GY_SIM, GZ_SIM] = GALACTIC_AXES_IN_SIM;
+    const [, , GZ_SIM] = GALACTIC_AXES_IN_SIM;
 
     // Galactic normal vector in simulation (ecliptic) frame is GZ_SIM
     const gz = new THREE.Vector3(GZ_SIM[0], GZ_SIM[1], GZ_SIM[2]).normalize();
