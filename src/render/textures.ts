@@ -472,6 +472,175 @@ export function createCharonTexture(): THREE.CanvasTexture {
   return tex;
 }
 
+export function createEnceladusTexture(): THREE.CanvasTexture {
+  const [canvas, ctx] = createCanvas(512, 256);
+  ctx.fillStyle = '#f8faff';
+  ctx.fillRect(0, 0, 512, 256);
+
+  // South polar tiger stripe fissures (geysers)
+  ctx.strokeStyle = '#60a5fa';
+  ctx.lineWidth = 3;
+  for (let i = 0; i < 4; i++) {
+    ctx.beginPath();
+    ctx.moveTo(120 + i * 70, 200);
+    ctx.bezierCurveTo(150 + i * 70, 225, 180 + i * 70, 235, 210 + i * 70, 245);
+    ctx.stroke();
+  }
+  // Subtle crater field in north
+  ctx.fillStyle = '#e2e8f0';
+  for (let i = 0; i < 150; i++) {
+    const x = Math.random() * 512, y = Math.random() * 120, r = Math.random() * 3 + 1;
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.wrapS = THREE.RepeatWrapping;
+  return tex;
+}
+
+export function createMimasTexture(): THREE.CanvasTexture {
+  const [canvas, ctx] = createCanvas(512, 256);
+  ctx.fillStyle = '#b0b4b8';
+  ctx.fillRect(0, 0, 512, 256);
+
+  // Giant Herschel crater (130 km across)
+  ctx.fillStyle = '#64748b';
+  ctx.beginPath();
+  ctx.arc(220, 128, 48, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#94a3b8';
+  ctx.beginPath();
+  ctx.arc(220, 128, 14, 0, Math.PI * 2); // central peak
+  ctx.fill();
+
+  // Dense crater impact background
+  for (let i = 0; i < 350; i++) {
+    const x = Math.random() * 512, y = Math.random() * 256, r = Math.random() * 4 + 1;
+    ctx.fillStyle = Math.random() > 0.5 ? '#7f8c9b' : '#c8ced6';
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.wrapS = THREE.RepeatWrapping;
+  return tex;
+}
+
+export function createIapetusTexture(): THREE.CanvasTexture {
+  const [canvas, ctx] = createCanvas(512, 256);
+  // Two-tone world: bright trailing hemisphere, pitch-dark leading hemisphere (Cassini Regio)
+  ctx.fillStyle = '#e2e8f0';
+  ctx.fillRect(0, 0, 512, 256);
+
+  ctx.fillStyle = '#1e140d'; // pitch coal-dark organic residue
+  ctx.beginPath();
+  ctx.ellipse(256, 128, 140, 110, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Equatorial ridge line
+  ctx.strokeStyle = '#475569';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(0, 128);
+  ctx.lineTo(512, 128);
+  ctx.stroke();
+
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.wrapS = THREE.RepeatWrapping;
+  return tex;
+}
+
+export function createTritonTexture(): THREE.CanvasTexture {
+  const [canvas, ctx] = createCanvas(512, 256);
+  // Pinkish nitrogen ice cap + greenish cantaloupe melon-skin terrain
+  ctx.fillStyle = '#cbd5e1';
+  ctx.fillRect(0, 0, 512, 256);
+
+  // South polar nitrogen/methane pink ice
+  ctx.fillStyle = '#fbcfe8';
+  ctx.fillRect(0, 150, 512, 106);
+
+  // Cantaloupe terrain cellular patterns
+  ctx.strokeStyle = '#94a3b8';
+  ctx.lineWidth = 1.5;
+  for (let i = 0; i < 180; i++) {
+    const x = Math.random() * 512, y = Math.random() * 150, r = Math.random() * 8 + 4;
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.wrapS = THREE.RepeatWrapping;
+  return tex;
+}
+
+export function createPhobosTexture(): THREE.CanvasTexture {
+  const [canvas, ctx] = createCanvas(512, 256);
+  ctx.fillStyle = '#78716c';
+  ctx.fillRect(0, 0, 512, 256);
+
+  // Giant Stickney impact crater
+  ctx.fillStyle = '#44403c';
+  ctx.beginPath();
+  ctx.arc(180, 110, 42, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Linear groove fracture lines
+  ctx.strokeStyle = '#57534e';
+  ctx.lineWidth = 2;
+  for (let i = 0; i < 8; i++) {
+    ctx.beginPath();
+    ctx.moveTo(180, 110);
+    ctx.lineTo(180 + Math.cos(i * 0.4) * 160, 110 + Math.sin(i * 0.4) * 120);
+    ctx.stroke();
+  }
+
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.wrapS = THREE.RepeatWrapping;
+  return tex;
+}
+
+export function createDeimosTexture(): THREE.CanvasTexture {
+  const [canvas, ctx] = createCanvas(512, 256);
+  ctx.fillStyle = '#8c827a';
+  ctx.fillRect(0, 0, 512, 256);
+
+  // Smooth regolith dust mantling with small muted craters
+  ctx.fillStyle = '#5c544d';
+  for (let i = 0; i < 120; i++) {
+    const x = Math.random() * 512, y = Math.random() * 256, r = Math.random() * 6 + 1;
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.wrapS = THREE.RepeatWrapping;
+  return tex;
+}
+
+export function createIcyMoonTexture(baseColor: string, craterColor: string): THREE.CanvasTexture {
+  const [canvas, ctx] = createCanvas(512, 256);
+  ctx.fillStyle = baseColor;
+  ctx.fillRect(0, 0, 512, 256);
+
+  for (let i = 0; i < 300; i++) {
+    const x = Math.random() * 512, y = Math.random() * 256, r = Math.random() * 4 + 1;
+    ctx.fillStyle = Math.random() > 0.5 ? craterColor : '#ffffff';
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.wrapS = THREE.RepeatWrapping;
+  return tex;
+}
+
 export const PLANET_TEXTURE_GETTERS: Record<string, () => THREE.CanvasTexture> = {
   sun: createSunTexture,
   mercury: createMercuryTexture,
@@ -483,11 +652,26 @@ export const PLANET_TEXTURE_GETTERS: Record<string, () => THREE.CanvasTexture> =
   uranus: createUranusTexture,
   neptune: createNeptuneTexture,
   moon: createMoonTexture,
+  phobos: createPhobosTexture,
+  deimos: createDeimosTexture,
   io: createIoTexture,
   europa: createEuropaTexture,
   ganymede: createGanymedeTexture,
   callisto: createCallistoTexture,
+  mimas: createMimasTexture,
+  enceladus: createEnceladusTexture,
+  tethys: () => createIcyMoonTexture('#d1d5db', '#9ca3af'),
+  dione: () => createIcyMoonTexture('#cbd5e1', '#64748b'),
+  rhea: () => createIcyMoonTexture('#e2e8f0', '#94a3b8'),
   titan: createTitanTexture,
+  hyperion: () => createIcyMoonTexture('#a89f91', '#57534e'),
+  iapetus: createIapetusTexture,
+  miranda: () => createIcyMoonTexture('#e2e8f0', '#64748b'),
+  ariel: () => createIcyMoonTexture('#cbd5e1', '#94a3b8'),
+  umbriel: () => createIcyMoonTexture('#64748b', '#334155'),
+  titania: () => createIcyMoonTexture('#d1d5db', '#6b7280'),
+  oberon: () => createIcyMoonTexture('#9ca3af', '#4b5563'),
+  triton: createTritonTexture,
   pluto: createPlutoTexture,
   charon: createCharonTexture,
 };

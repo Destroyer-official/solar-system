@@ -22,6 +22,7 @@ export interface ViewState {
   showMilkyWay?: boolean;
   showOortCloud?: boolean;
   showGalacticHalo?: boolean;
+  showLabels?: boolean;
   galaxyState?: GalacticOrbitState;
   galaxyCamera?: string;
   galaxyZExag?: number;
@@ -88,19 +89,25 @@ export function createViewer(
   scene.add(sunLight);
 
   // 3. Body visuals
+  const visualById = new Map<string, BodyVisual>();
   const visuals: BodyVisual[] = model.ids.map((id, i) => {
+    const bodyDef = model.bodies?.find((b) => b.id === id);
+    const parentId = (bodyDef as { parent?: string } | undefined)?.parent;
     const vis = new BodyVisual({
       id,
       name: model.names[i]!,
       radiusKm: model.radiusKm[i]!,
       color: model.colors[i]!,
       physical: model.physicalMap[id],
+      isMoon: !!parentId,
+      parentId,
     });
     scene.add(vis.group);
+    visualById.set(id, vis);
     return vis;
   });
 
-  // 4. Raycasting on click for selection
+  // 4. Raycasting on click for selection (supports mesh or floating label)
   const raycaster = new THREE.Raycaster();
   const mouse = new THREE.Vector2();
 
@@ -110,12 +117,12 @@ export function createViewer(
     mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
 
     raycaster.setFromCamera(mouse, camera);
-    const meshes = visuals.map((v) => v.mesh);
-    const hits = raycaster.intersectObjects(meshes, false);
+    const clickables = visuals.flatMap((v) => [v.mesh, v.labelSprite]);
+    const hits = raycaster.intersectObjects(clickables, false);
 
     if (hits.length > 0) {
-      const hitMesh = hits[0]!.object;
-      const hitVis = visuals.find((v) => v.mesh === hitMesh);
+      const hitObj = hits[0]!.object;
+      const hitVis = visuals.find((v) => v.mesh === hitObj || v.labelSprite === hitObj);
       if (hitVis) {
         options?.onSelect?.(hitVis.id);
         return;
@@ -234,6 +241,29 @@ export function createViewer(
         const ringScale = visualRadius / vis.radiusAu;
         vis.ringMesh.scale.setScalar(ringScale);
       }
+
+      // Update 3D billboard label
+      let labelVisible = v.showLabels !== false;
+      if (vis.isMoon && vis.parentId && labelVisible) {
+        const parentVis = visualById.get(vis.parentId);
+        if (parentVis) {
+          const camDistToParent = camera.position.distanceTo(parentVis.group.position);
+          // Only show moon labels if camera is within 0.35 AU of the parent planetary system
+          if (camDistToParent > 0.35) {
+            labelVisible = false;
+          } else {
+            const sepAu = vis.group.position.distanceTo(parentVis.group.position);
+            const frustumH = 2 * dist * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
+            const auPerPx = frustumH / Math.max(1, height);
+            const sepPx = sepAu / auPerPx;
+            // Hide moon label if it's less than 16px from parent on screen (avoids text overlap)
+            if (sepPx < 16) {
+              labelVisible = false;
+            }
+          }
+        }
+      }
+      vis.updateLabel(dist, labelVisible, visualRadius, camera.fov, height);
     }
 
     // Oort cloud visual in solar mode
@@ -303,7 +333,31 @@ export function createViewer(
     baryAttr.setXYZ(0, w[0]!, w[1]!, w[2]!);
     baryAttr.needsUpdate = true;
 
-    for (const t of trails) t.line.visible = v.trails;
+    const focusId = v.focus >= 0 ? model.ids[v.focus] : undefined;
+    const focusParent = focusId
+      ? (model.bodies?.find((b) => b.id === focusId) as { parent?: string } | undefined)?.parent ?? focusId
+      : undefined;
+
+    for (let i = 0; i < trails.length; i++) {
+      const t = trails[i]!;
+      const id = model.ids[i]!;
+      if (!v.trails) {
+        t.line.visible = false;
+        continue;
+      }
+
+      if (focusId && focusId !== 'sun') {
+        // Focused on a planetary or moon system: only show trails in this system
+        const myParent = (model.bodies?.find((b) => b.id === id) as { parent?: string } | undefined)?.parent;
+        const inSystem = id === focusParent || myParent === focusParent;
+        t.line.visible = inSystem;
+      } else {
+        // Focused on Sun or Barycenter: show planets and dwarf planets (omit moons to avoid trail clutter)
+        const myParent = (model.bodies?.find((b) => b.id === id) as { parent?: string } | undefined)?.parent;
+        t.line.visible = !myParent;
+      }
+    }
+
     if (v.trails) {
       const count = buildTracks(
         v.history,

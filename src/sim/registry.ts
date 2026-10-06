@@ -135,6 +135,6 @@ export function loadSystem(list: readonly BodyJson[] = PLANET_BODIES): SystemMod
     state,
     physical: defs.map((d) => physicalById.get(d.id) ?? {}),
     physicalMap: Object.fromEntries(physicalById),
-    bodies: list,
+    bodies: defs.map((d) => meta.get(d.id)!),
   };
 }

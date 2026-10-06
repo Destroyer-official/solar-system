@@ -13,6 +13,71 @@ export interface BodyVisualOptions {
   radiusKm: number;
   color: string;
   physical?: PhysicalJson;
+  isMoon?: boolean;
+  parentId?: string;
+}
+
+function createTextSprite(text: string, color: string, isMoon: boolean): THREE.Sprite {
+  if (typeof document === 'undefined') {
+    return new THREE.Sprite(new THREE.SpriteMaterial());
+  }
+  const canvas = document.createElement('canvas');
+  canvas.width = 256;
+  canvas.height = 64;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return new THREE.Sprite(new THREE.SpriteMaterial());
+
+  const fontSize = isMoon ? 19 : 23;
+  ctx.font = `600 ${fontSize}px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif`;
+  const metrics = ctx.measureText(text);
+  const textWidth = metrics.width;
+
+  const padX = isMoon ? 12 : 14;
+  const pillHeight = isMoon ? 28 : 32;
+  const pillWidth = Math.min(240, Math.max(50, textWidth + padX * 2 + 14));
+  const pillX = (canvas.width - pillWidth) / 2;
+  const pillY = (canvas.height - pillHeight) / 2;
+  const radius = pillHeight / 2;
+
+  // Background rounded rectangle
+  ctx.beginPath();
+  if (typeof ctx.roundRect === 'function') {
+    ctx.roundRect(pillX, pillY, pillWidth, pillHeight, radius);
+  } else {
+    ctx.rect(pillX, pillY, pillWidth, pillHeight);
+  }
+  ctx.fillStyle = isMoon ? 'rgba(15, 23, 42, 0.85)' : 'rgba(8, 12, 24, 0.9)';
+  ctx.fill();
+
+  // Subtle accent border
+  ctx.strokeStyle = color;
+  ctx.lineWidth = isMoon ? 1.5 : 2;
+  ctx.stroke();
+
+  // Tiny color indicator circle before text
+  const dotR = isMoon ? 3 : 3.5;
+  const dotX = pillX + padX;
+  const dotY = canvas.height / 2;
+  ctx.beginPath();
+  ctx.arc(dotX, dotY, dotR, 0, Math.PI * 2);
+  ctx.fillStyle = color;
+  ctx.fill();
+
+  // Text
+  ctx.fillStyle = '#ffffff';
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(text, dotX + dotR + 6, canvas.height / 2);
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.minFilter = THREE.LinearFilter;
+  const mat = new THREE.SpriteMaterial({
+    map: texture,
+    transparent: true,
+    depthTest: false,
+    depthWrite: false,
+  });
+  return new THREE.Sprite(mat);
 }
 
 export class BodyVisual {
@@ -22,10 +87,13 @@ export class BodyVisual {
   readonly radiusAu: number;
   readonly flattening: number;
   readonly physical?: PhysicalJson;
+  readonly isMoon: boolean;
+  readonly parentId?: string;
 
   readonly group: THREE.Group;
   readonly mesh: THREE.Mesh;
   readonly ringMesh?: THREE.Mesh;
+  readonly labelSprite: THREE.Sprite;
 
   constructor(opts: BodyVisualOptions) {
     this.id = opts.id;
@@ -34,6 +102,8 @@ export class BodyVisual {
     this.radiusAu = opts.radiusKm / AU_KM;
     this.physical = opts.physical;
     this.flattening = opts.physical?.flattening ?? 0;
+    this.isMoon = !!opts.isMoon;
+    this.parentId = opts.parentId;
 
     this.group = new THREE.Group();
 
@@ -50,10 +120,11 @@ export class BodyVisual {
     }
 
     if (opts.id === 'sun') {
-      mat = new THREE.MeshBasicMaterial({
-        map: tex,
+      const sunOpts: THREE.MeshBasicMaterialParameters = {
         color: 0xffffff,
-      });
+      };
+      if (tex) sunOpts.map = tex;
+      mat = new THREE.MeshBasicMaterial(sunOpts);
 
       // Atmospheric outer glow
       const glowGeom = new THREE.SphereGeometry(1.2, 32, 16);
@@ -66,18 +137,23 @@ export class BodyVisual {
       const glow = new THREE.Mesh(glowGeom, glowMat);
       this.group.add(glow);
     } else {
-      mat = new THREE.MeshStandardMaterial({
-        map: tex,
+      const stdOpts: THREE.MeshStandardMaterialParameters = {
         color: tex ? 0xffffff : opts.color,
         roughness: 0.7,
         metalness: 0.05,
-      });
+      };
+      if (tex) stdOpts.map = tex;
+      mat = new THREE.MeshStandardMaterial(stdOpts);
     }
 
     this.mesh = new THREE.Mesh(geom, mat);
     // Oblateness along the pole (+z)
     this.mesh.scale.z = 1 - this.flattening;
     this.group.add(this.mesh);
+
+    // Floating text label sprite
+    this.labelSprite = createTextSprite(this.name, opts.color, this.isMoon);
+    this.group.add(this.labelSprite);
 
     // Planetary ring (Saturn, etc.)
     if (opts.physical?.ring) {
@@ -191,4 +267,46 @@ export class BodyVisual {
     const minRadiusAu = cameraDistAu * pixelFactor;
     return Math.max(this.radiusAu, minRadiusAu);
   }
+
+  /**
+   * Update the 3D floating billboard label.
+   * Keeps the label at a fixed, crisp screen pixel height and offsets it above the sphere disc.
+   */
+  updateLabel(
+    cameraDistAu: number,
+    visible: boolean,
+    visualRadiusAu: number,
+    fovDeg: number,
+    viewportHeightPx: number,
+  ): void {
+    if (!this.labelSprite) return;
+    if (!visible) {
+      this.labelSprite.visible = false;
+      return;
+    }
+
+    this.labelSprite.visible = true;
+
+    // Height of frustum in AU at this camera distance
+    const frustumHeightAu = 2 * cameraDistAu * Math.tan(THREE.MathUtils.degToRad(fovDeg / 2));
+    const auPerPixel = frustumHeightAu / Math.max(1, viewportHeightPx);
+
+    // Target label height in screen pixels
+    const targetHeightPx = this.isMoon ? 18 : 22;
+    const spriteHeightAu = targetHeightPx * auPerPixel;
+    // Canvas is 256x64 (aspect ratio 4:1)
+    const spriteWidthAu = spriteHeightAu * 4;
+
+    this.labelSprite.scale.set(spriteWidthAu, spriteHeightAu, 1);
+
+    // Planet/moon apparent screen radius in pixels
+    const radiusPx = visualRadiusAu / auPerPixel;
+
+    // Offset in screen pixels: radiusPx + margin (8px) + half sprite height
+    const offsetPx = radiusPx + 8 + targetHeightPx / 2;
+    // Center Y anchor: normalized relative to sprite height:
+    // When center.y is negative, sprite shifts UP in camera view space
+    this.labelSprite.center.set(0.5, 0.5 - offsetPx / targetHeightPx);
+  }
 }
+

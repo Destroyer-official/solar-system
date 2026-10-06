@@ -242,8 +242,9 @@ export function createPanel(root: HTMLElement, store: AppStore, ctx: PanelContex
 
         <div class="row">
           <label><input id="trails" type="checkbox" checked> Trails</label>
-          <label><input id="showMilkyWay" type="checkbox" checked> Milky Way Galaxy</label>
-          <label><input id="showOortCloud" type="checkbox"> Oort Cloud (100k AU)</label>
+          <label><input id="showLabels" type="checkbox" checked> 🏷️ Labels</label>
+          <label><input id="showMilkyWay" type="checkbox" checked> Milky Way</label>
+          <label><input id="showOortCloud" type="checkbox"> Oort Cloud</label>
         </div>
 
         <label>Along-track compression (Galactic Corkscrew View)
@@ -287,6 +288,7 @@ export function createPanel(root: HTMLElement, store: AppStore, ctx: PanelContex
   const compressIn = q<HTMLInputElement>('#compress');
   const cLabel = q<HTMLSpanElement>('#cLabel');
   const factsBox = q<HTMLDivElement>('#factsBox');
+  const showLabelsIn = q<HTMLInputElement>('#showLabels');
   const showMilkyWayIn = q<HTMLInputElement>('#showMilkyWay');
   const showOortCloudIn = q<HTMLInputElement>('#showOortCloud');
   const trailSel = q<HTMLSelectElement>('#trailDays'),
@@ -348,6 +350,7 @@ export function createPanel(root: HTMLElement, store: AppStore, ctx: PanelContex
     scaleExagIn.value = String(s.scaleExaggeration);
     exagVal.textContent = `${s.scaleExaggeration}x`;
     compressIn.value = String(Math.log10(s.compress));
+    if (showLabelsIn) showLabelsIn.checked = s.showLabels !== false;
     if (showMilkyWayIn) showMilkyWayIn.checked = !!s.showMilkyWay;
     if (showOortCloudIn) showOortCloudIn.checked = !!s.showOortCloud;
     const ratio = Math.round(1 / s.compress);
@@ -395,6 +398,10 @@ export function createPanel(root: HTMLElement, store: AppStore, ctx: PanelContex
   trailSel.onchange = () => store.set('trailDays', Number(trailSel.value));
   q<HTMLInputElement>('#trails').onchange = (e) =>
     store.set('trails', (e.target as HTMLInputElement).checked);
+  if (showLabelsIn) {
+    showLabelsIn.onchange = (e) =>
+      store.set('showLabels', (e.target as HTMLInputElement).checked);
+  }
   if (showMilkyWayIn) {
     showMilkyWayIn.onchange = (e) =>
       store.set('showMilkyWay', (e.target as HTMLInputElement).checked);

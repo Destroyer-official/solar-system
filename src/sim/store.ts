@@ -9,6 +9,7 @@ export interface AppState {
   showMilkyWay: boolean;
   showOortCloud: boolean;
   showGalacticHalo: boolean;
+  showLabels: boolean;
   dynamicsMode: DynamicsMode;
   galaxyModelId: string;
   showRealityInspector: boolean;
