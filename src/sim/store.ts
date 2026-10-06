@@ -7,6 +7,8 @@ export type DynamicsMode = 'simulation' | 'ephemeris';
 export interface AppState {
   mode: AppMode;
   showMilkyWay: boolean;
+  showOortCloud: boolean;
+  showGalacticHalo: boolean;
   dynamicsMode: DynamicsMode;
   galaxyModelId: string;
   showRealityInspector: boolean;

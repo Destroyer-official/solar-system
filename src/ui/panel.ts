@@ -44,43 +44,41 @@ export interface PanelData {
   galaxyReadout?: GalaxyReadout | null;
 }
 
-const fill = (sel: HTMLSelectElement, opts: Option[]) =>
-  (sel.innerHTML = opts.map((o) => `<option value="${o.id}">${o.label}</option>`).join(''));
-
 export function createPanel(root: HTMLElement, store: AppStore, ctx: PanelContext) {
   root.innerHTML = `
-    <div class="panel">
-      <div class="panel-header">
-        <h1>Celestial Dynamics</h1>
-      </div>
-
-      <div class="mode-tabs">
-        <button id="modeSolar" class="tab-btn active">Planets View</button>
+    <div class="panel-inner">
+      <div class="tabs">
+        <button id="modeSolar" class="tab-btn active">Solar System</button>
         <button id="modeGalaxy" class="tab-btn">Milky Way Galaxy</button>
       </div>
 
-      <!-- Dynamics Mode Bar (Truth & Ephemeris vs Simulation) -->
+      <!-- Dynamics Mode Indicator & Reseed -->
       <div class="dynamics-bar">
-        <div id="dynamicsStatus" class="status-badge">● Simulation: Yoshida-4 + 1PN + J2</div>
-        <div class="row">
-          <button id="toggleDynamics" style="font-size:11px;padding:3px 6px;">Switch to JPL DE440</button>
-          <button id="reseedBtn" style="font-size:11px;padding:3px 6px;" title="Re-seed N-body from Horizons DE440 vectors to reset drift">Re-sync Horizons</button>
-          <button id="valTableBtn" style="font-size:11px;padding:3px 6px;">Validation</button>
+        <div style="display: flex; align-items: center; gap: 6px;">
+          <span style="font-size: 11px; opacity: 0.7;">Mode:</span>
+          <span id="dynamicsStatus" class="status-badge badge-sim">N-Body Sim</span>
+        </div>
+        <div style="display: flex; gap: 4px;">
+          <button id="toggleDynamics" style="font-size: 10px; padding: 2px 6px;">Switch Mode</button>
+          <button id="reseedBtn" style="font-size: 10px; padding: 2px 6px;" title="Reset N-body state to NASA Horizons truth vectors at current date">Re-seed</button>
+          <button id="valTableBtn" style="font-size: 10px; padding: 2px 6px;" title="View comparison table vs JPL Horizons">Validation</button>
         </div>
       </div>
 
-      <!-- Horizons Validation Table Box -->
-      <div id="valTableBox" class="val-table-container" style="display: none;">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
-          <strong style="color:#38bdf8;">Horizons DE440 vs N-Body Validation</strong>
-          <button id="closeValTable" style="padding:1px 5px;font-size:10px;">✕</button>
-        </div>
-        <div style="font-size:10px;color:#94a3b8;margin-bottom:6px;">
-          Yoshida-4 + 1PN General Relativity + Solar J2 vs JPL Horizons:
+      <!-- Validation Table Box (Collapsible) -->
+      <div id="valTableBox" class="val-table-box" style="display: none;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+          <strong style="color:#00ffcc; font-size:11px;">JPL DE440 Accuracy Table</strong>
+          <button id="closeValTable" style="padding:1px 5px; font-size:10px;">✕</button>
         </div>
         <table class="val-table">
           <thead>
-            <tr><th>Body</th><th>Offset</th><th>Err (AU)</th><th>Err (km)</th></tr>
+            <tr>
+              <th>Body</th>
+              <th>Offset</th>
+              <th>Δ pos (AU)</th>
+              <th>Δ pos (km)</th>
+            </tr>
           </thead>
           <tbody>
             ${ctx.validationTable
@@ -120,8 +118,28 @@ export function createPanel(root: HTMLElement, store: AppStore, ctx: PanelContex
           <span id="realSizeTag" class="reality-tag tag-scaled">Scaled (visual only)</span>
         </div>
         <div class="reality-item">
+          <span>Planetary Disc:</span>
+          <span class="reality-tag tag-true">True (flat ~1:60)</span>
+        </div>
+        <div class="reality-item">
+          <span>Oort Cloud:</span>
+          <span class="reality-tag tag-model">Model (2k–100k AU sphere)</span>
+        </div>
+        <div class="reality-item">
           <span>Galactic Travel:</span>
           <span id="realTravelTag" class="reality-tag tag-scaled">Scaled (1:20 view)</span>
+        </div>
+        <div class="reality-item">
+          <span>Thin Disc:</span>
+          <span class="reality-tag tag-true">True (flat ~1:100)</span>
+        </div>
+        <div class="reality-item">
+          <span>Galactic Halo:</span>
+          <span class="reality-tag tag-model">Model (158 clusters + halo)</span>
+        </div>
+        <div class="reality-item">
+          <span>Dark Matter:</span>
+          <span class="reality-tag tag-model">Model (200kpc envelope)</span>
         </div>
         <div class="reality-item">
           <span>Textures:</span>
@@ -189,7 +207,10 @@ export function createPanel(root: HTMLElement, store: AppStore, ctx: PanelContex
           </select>
         </label>
         <label><input id="trails" type="checkbox" checked> Trails</label>
-        <label><input id="showMilkyWay" type="checkbox"> Milky Way backdrop</label>
+        <div class="row">
+          <label><input id="showMilkyWay" type="checkbox"> Milky Way backdrop</label>
+          <label><input id="showOortCloud" type="checkbox"> Oort Cloud (100k AU)</label>
+        </div>
         <label>Along-track compression <input id="compress" type="range" min="-2" max="0" step="0.05" value="0"> <span id="cLabel">1:1</span></label>
         <div id="factsBox" class="facts-box" style="display:none;"></div>
         <pre id="readout"></pre>
@@ -228,6 +249,9 @@ export function createPanel(root: HTMLElement, store: AppStore, ctx: PanelContex
           <input id="galZExag" type="range" min="1" max="5" step="0.1" value="1">
           <span id="galZExagVal">1.0x (True Scale)</span>
         </label>
+        <div class="row">
+          <label><input id="showGalacticHalo" type="checkbox" checked> Stellar Halo & Globular Clusters</label>
+        </div>
 
         <div class="galaxy-info">
           <div><strong>Sun's Galactic Orbit:</strong> ~245 Myr (Rosette)</div>
@@ -235,6 +259,7 @@ export function createPanel(root: HTMLElement, store: AppStore, ctx: PanelContex
           <div><strong>Galactic Center:</strong> Sgr A* (8.2 kpc distance)</div>
           <div><strong>Ecliptic Tilt:</strong> 60.2° to Galactic Midplane</div>
           <div><strong>CMB Dipole Speed:</strong> 369.82 km/s (Planck 2020)</div>
+          <div><strong>Spherical Halo:</strong> 158 Globular Clusters (35 kpc)</div>
         </div>
 
         <pre id="galaxyReadout"></pre>
@@ -279,7 +304,8 @@ export function createPanel(root: HTMLElement, store: AppStore, ctx: PanelContex
   const cLabel = q<HTMLSpanElement>('#cLabel');
   const factsBox = q<HTMLDivElement>('#factsBox');
   const showMilkyWayIn = q<HTMLInputElement>('#showMilkyWay');
- const trailSel = q<HTMLSelectElement>('#trailDays'),
+  const showOortCloudIn = q<HTMLInputElement>('#showOortCloud');
+  const trailSel = q<HTMLSelectElement>('#trailDays'),
     dateIn = q<HTMLInputElement>('#date');
   const out = q<HTMLPreElement>('#readout');
   const solarGalaxyModel = q<HTMLSelectElement>('#solarGalaxyModel');
@@ -293,6 +319,7 @@ export function createPanel(root: HTMLElement, store: AppStore, ctx: PanelContex
   const galCamera = q<HTMLSelectElement>('#galCamera');
   const galZExag = q<HTMLInputElement>('#galZExag'),
     galZExagVal = q<HTMLSpanElement>('#galZExagVal');
+  const showGalacticHaloIn = q<HTMLInputElement>('#showGalacticHalo');
   const galOut = q<HTMLPreElement>('#galaxyReadout');
   const galaxyModel = q<HTMLSelectElement>('#galaxyModel');
 
@@ -310,32 +337,35 @@ export function createPanel(root: HTMLElement, store: AppStore, ctx: PanelContex
     modeSolarBtn.classList.toggle('active', isSolar);
     modeGalaxyBtn.classList.toggle('active', !isSolar);
     solarSection.style.display = isSolar ? 'grid' : 'none';
-    galaxySection.style.display = isSolar ? 'none' : 'grid';
+    galaxySection.style.display = !isSolar ? 'grid' : 'none';
 
-    // Dynamics mode sync
-    const isEphem = s.dynamicsMode === 'ephemeris';
-    dynamicsStatus.className = `status-badge ${isEphem ? 'ephem' : ''}`;
-    dynamicsStatus.textContent = isEphem
-      ? '● NASA JPL DE440 Ephemeris (Exact to meters)'
-      : '● Simulation: Yoshida-4 + 1PN + J2';
-    toggleDynamics.textContent = isEphem
-      ? 'Switch to Simulation Mode'
-      : 'Switch to JPL DE440 Ephemeris';
+    // Dynamics badge & inspector
+    if (s.dynamicsMode === 'ephemeris') {
+      dynamicsStatus.textContent = 'DE440 Ephemeris';
+      dynamicsStatus.className = 'status-badge badge-eph';
+      realPosTag.textContent = 'True (DE440)';
+      realPosTag.className = 'reality-tag tag-true';
+    } else {
+      dynamicsStatus.textContent = 'Yoshida-4 N-Body';
+      dynamicsStatus.className = 'status-badge badge-sim';
+      realPosTag.textContent = 'True (N-body 1PN)';
+      realPosTag.className = 'reality-tag tag-true';
+    }
 
-    // Reality inspector sync
-    realityInspector.style.display = s.showRealityInspector ? 'grid' : 'none';
-    realityArrow.textContent = s.showRealityInspector ? '▴' : '▾';
     valTableBox.style.display = s.showValidationTable ? 'block' : 'none';
+    realityInspector.style.display = s.showRealityInspector ? 'flex' : 'none';
+    realityArrow.textContent = s.showRealityInspector ? '▴' : '▾';
 
-    realPosTag.className = `reality-tag ${isEphem ? 'tag-true' : 'tag-model'}`;
-    realPosTag.textContent = isEphem ? 'True (DE440)' : 'Model (N-body)';
+    realSizeTag.textContent =
+      s.scaleMode === 'true' ? 'True Physical' : `Scaled (${s.scaleMode})`;
+    realSizeTag.className =
+      s.scaleMode === 'true' ? 'reality-tag tag-true' : 'reality-tag tag-scaled';
 
-    realSizeTag.className = `reality-tag ${s.scaleMode === 'true' ? 'tag-true' : 'tag-scaled'}`;
-    realSizeTag.textContent = s.scaleMode === 'true' ? 'True (IAU)' : 'Scaled (visual only)';
-
-    realTravelTag.className = `reality-tag ${s.compress === 1 ? 'tag-true' : 'tag-scaled'}`;
+    const compRatio = Math.round(1 / s.compress);
     realTravelTag.textContent =
-      s.compress === 1 ? 'True (49 AU/yr)' : `Scaled (1:${Math.round(1 / s.compress)})`;
+      compRatio === 1 ? 'True (1:1)' : `Scaled (1:${compRatio} view)`;
+    realTravelTag.className =
+      compRatio === 1 ? 'reality-tag tag-true' : 'reality-tag tag-scaled';
 
     const activeModel = ctx.galaxyModels.find((m) => m.id === s.galaxyModelId);
     if (activeModel) {
@@ -358,6 +388,7 @@ export function createPanel(root: HTMLElement, store: AppStore, ctx: PanelContex
     exagVal.textContent = `${s.scaleExaggeration}x`;
     compressIn.value = String(Math.log10(s.compress));
     if (showMilkyWayIn) showMilkyWayIn.checked = !!s.showMilkyWay;
+    if (showOortCloudIn) showOortCloudIn.checked = !!s.showOortCloud;
     const ratio = Math.round(1 / s.compress);
     cLabel.textContent = ratio === 1 ? '1:1' : `1:${ratio} (visual only)`;
 
@@ -370,6 +401,7 @@ export function createPanel(root: HTMLElement, store: AppStore, ctx: PanelContex
     galZExag.value = String(s.galaxyZExag);
     galZExagVal.textContent =
       s.galaxyZExag === 1 ? '1.0x (True Scale)' : `${s.galaxyZExag.toFixed(1)}x`;
+    if (showGalacticHaloIn) showGalacticHaloIn.checked = s.showGalacticHalo !== false;
   };
 
   modeSolarBtn.onclick = () => store.set('mode', 'solar');
@@ -421,6 +453,10 @@ export function createPanel(root: HTMLElement, store: AppStore, ctx: PanelContex
     showMilkyWayIn.onchange = (e) =>
       store.set('showMilkyWay', (e.target as HTMLInputElement).checked);
   }
+  if (showOortCloudIn) {
+    showOortCloudIn.onchange = (e) =>
+      store.set('showOortCloud', (e.target as HTMLInputElement).checked);
+  }
 
   // Galaxy actions
   galPlay.onclick = () => store.set('playing', !store.get().playing);
@@ -433,6 +469,10 @@ export function createPanel(root: HTMLElement, store: AppStore, ctx: PanelContex
     ctx.onGalaxyCamera?.(cam);
   };
   galZExag.oninput = () => store.set('galaxyZExag', Number(galZExag.value));
+  if (showGalacticHaloIn) {
+    showGalacticHaloIn.onchange = (e) =>
+      store.set('showGalacticHalo', (e.target as HTMLInputElement).checked);
+  }
 
   const intSel = q<HTMLSelectElement>('#integrator');
   const relIn = q<HTMLInputElement>('#relativity');
@@ -448,35 +488,46 @@ export function createPanel(root: HTMLElement, store: AppStore, ctx: PanelContex
   relIn.onchange = emitPhysics;
   quadIn.onchange = emitPhysics;
 
-  root.querySelectorAll<HTMLButtonElement>('[data-preset]').forEach((b) => {
-    b.onclick = () => store.set('preset', b.dataset.preset!);
-  });
+  q('#presets').onclick = (e) => {
+    const t = e.target as HTMLElement;
+    if (t.tagName === 'BUTTON' && t.dataset['preset']) {
+      store.set('preset', t.dataset['preset']!);
+    }
+  };
+
   store.subscribe(sync);
   sync();
 
   return {
-    update(d: PanelData) {
-      if (store.get().mode === 'solar') {
-        const au = d.sunBaryAu;
-        out.textContent = [
-          `Date (UTC)      ${d.dateUtc}`,
-          `Sun-barycenter  ${au.toFixed(5)} AU = ${((au * AU_KM) / ctx.sunRadiusKm).toFixed(2)} R_sun`,
-          `Sun speed here  ${d.sunSpeedKms.toFixed(3)} km/s`,
-          `Energy drift    ${d.energyDrift.toExponential(2)}`,
-          `Ang.mom. drift  ${d.angMomDrift.toExponential(2)}`,
-          '',
-          'Body        r_sun(AU)  v(km/s)',
-          ...d.rows.map(
-            (r) => `${r.name.padEnd(10)} ${r.rAu.toFixed(3).padStart(9)} ${r.vKms.toFixed(2).padStart(8)}`,
-          ),
-          d.busy ? '\nComputing jump...' : '',
-        ].join('\n');
+    update(d: PanelData): void {
+      const isSolar = store.get().mode === 'solar';
 
+      if (isSolar) {
+        dateIn.value = d.dateUtc ? d.dateUtc.slice(0, 10) : '';
+
+        const lines: string[] = [
+          `Date (UTC)     ${d.dateUtc}`,
+          `Sun-SSB dist   ${(d.sunBaryAu * AU_KM).toLocaleString('en-US', { maximumFractionDigits: 0 })} km (${(d.sunBaryAu * AU_KM / ctx.sunRadiusKm).toFixed(2)} R_sun)`,
+          `Sun speed      ${d.sunSpeedKms.toFixed(3)} km/s`,
+          `|ΔE/E|         ${d.energyDrift.toExponential(2)}`,
+          `|ΔL/L|         ${d.angMomDrift.toExponential(2)}`,
+          d.busy ? 'SIMULATION BUSY' : '',
+          '',
+          'Body         Dist(AU)   Dist(km)      Speed(km/s)',
+          '------------------------------------------------',
+          ...d.rows.map(
+            (r) =>
+              `${r.name.padEnd(12)} ${r.rAu.toFixed(4).padStart(9)} ${(r.rAu * AU_KM).toLocaleString('en-US', { maximumFractionDigits: 0 }).padStart(13)} ${r.vKms.toFixed(2).padStart(11)}`,
+          ),
+        ];
+        out.textContent = lines.filter(Boolean).join('\n');
+
+        // Selection facts card
         if (d.selectedFacts) {
           const sf = d.selectedFacts;
           factsBox.style.display = 'block';
           factsBox.innerHTML = `
-            <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid rgba(255,255,255,0.2);padding-bottom:4px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;">
               <strong style="font-size:1.1em;color:#ffd700;">${sf.name}</strong>
               <button id="closeFacts" style="padding:1px 6px;font-size:0.8em;">✕</button>
             </div>
@@ -520,4 +571,8 @@ export function createPanel(root: HTMLElement, store: AppStore, ctx: PanelContex
       }
     },
   };
+}
+
+function fill(sel: HTMLSelectElement, opts: Option[]) {
+  sel.innerHTML = opts.map((o) => `<option value="${o.id}">${o.label}</option>`).join('');
 }

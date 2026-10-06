@@ -4,12 +4,21 @@ import type { GalacticOrbitState } from '@/physics/galacticPotential';
 export interface GalaxyVisualConfig {
   numStars?: number;
   diskRadiusKpc?: number;
+  numHaloStars?: number;
+  numGlobularClusters?: number;
 }
 
 export class GalaxyVisual {
   readonly group = new THREE.Group();
   private readonly starsPoints: THREE.Points;
   private readonly bulgePoints: THREE.Points;
+
+  // Spherical non-flat components of the Milky Way
+  private readonly haloGroup = new THREE.Group();
+  private readonly haloPoints: THREE.Points;
+  private readonly globularPoints: THREE.Points;
+  private readonly dmBoundary: THREE.Group;
+
   private readonly orbitLine: THREE.Line;
   private readonly orbitGeom: THREE.BufferGeometry;
   private readonly sunMarker: THREE.Group;
@@ -23,14 +32,20 @@ export class GalaxyVisual {
   private readonly baseStarZ: Float32Array;
   private readonly bulgePositions: Float32Array;
   private readonly baseBulgeZ: Float32Array;
+  private readonly haloPositions: Float32Array;
+  private readonly baseHaloZ: Float32Array;
+  private readonly globularPositions: Float32Array;
+  private readonly baseGlobularZ: Float32Array;
 
   constructor(config: GalaxyVisualConfig = {}) {
     const numStars = config.numStars ?? 60_000;
     const diskRadius = config.diskRadiusKpc ?? 18;
+    const numHaloStars = config.numHaloStars ?? 8_000;
+    const numGlobular = config.numGlobularClusters ?? 158;
 
     const starTex = this.createStarTexture();
 
-    // 1. Milky Way Spiral Arms Star Distribution
+    // 1. Milky Way Spiral Arms Star Distribution (Flat Thin Disc, ~1:100 aspect ratio)
     const starGeom = new THREE.BufferGeometry();
     this.starPositions = new Float32Array(numStars * 3);
     this.baseStarZ = new Float32Array(numStars);
@@ -74,16 +89,12 @@ export class GalaxyVisual {
       this.baseStarZ[i] = z;
 
       // Color based on location and type
-      // Spiral arms have young blue/white stars and pinkish HII regions; outer/inner have warmer stars
       const color = new THREE.Color();
       if (isArm && Math.random() < 0.25) {
-        // Young O/B bright blue-white
         color.setHSL(0.58 + Math.random() * 0.08, 0.85, 0.75 + Math.random() * 0.2);
       } else if (isArm && Math.random() < 0.08) {
-        // H II emission nebula / starburst (magenta/pink)
         color.setHSL(0.92 + Math.random() * 0.06, 0.9, 0.7);
       } else {
-        // General disc population (yellow/orange/white)
         const warmth = Math.min(1, 2.5 / (r + 0.5));
         color.setHSL(0.12 - 0.05 * warmth, 0.4 + 0.5 * warmth, 0.65 + Math.random() * 0.3);
       }
@@ -107,7 +118,7 @@ export class GalaxyVisual {
     this.starsPoints = new THREE.Points(starGeom, starMat);
     this.group.add(this.starsPoints);
 
-    // 2. Central Galactic Bulge
+    // 2. Central Galactic Bulge (Thicker spheroidal core)
     const numBulge = 15_000;
     const bulgeGeom = new THREE.BufferGeometry();
     this.bulgePositions = new Float32Array(numBulge * 3);
@@ -116,7 +127,6 @@ export class GalaxyVisual {
 
     for (let i = 0; i < numBulge; i++) {
       const idx = i * 3;
-      // Spheroidal Miyamoto-Nagai / Hernquist bulge distribution
       const r = Math.pow(Math.random(), 2.5) * 2.5;
       const phi = Math.random() * 2 * Math.PI;
       const costheta = 2 * Math.random() - 1;
@@ -131,7 +141,6 @@ export class GalaxyVisual {
       this.bulgePositions[idx + 2] = z;
       this.baseBulgeZ[i] = z;
 
-      // Golden / warm amber core colors
       const color = new THREE.Color();
       color.setHSL(0.1 + Math.random() * 0.05, 0.8, 0.75 + Math.random() * 0.25);
       bulgeColors[idx] = color.r;
@@ -153,7 +162,111 @@ export class GalaxyVisual {
     this.bulgePoints = new THREE.Points(bulgeGeom, bulgeMat);
     this.group.add(this.bulgePoints);
 
-    // 3. Central Black Hole: Sagittarius A*
+    // 3. Spherical Stellar Halo (Population II ancient stars, r ~ 2 to 35 kpc)
+    const haloGeom = new THREE.BufferGeometry();
+    this.haloPositions = new Float32Array(numHaloStars * 3);
+    this.baseHaloZ = new Float32Array(numHaloStars);
+    const haloColors = new Float32Array(numHaloStars * 3);
+
+    for (let i = 0; i < numHaloStars; i++) {
+      const idx = i * 3;
+      // Power law density n(r) ~ r^-3.5
+      const u = Math.random();
+      const r = 2.0 + Math.pow(u, 0.5) * 32.0; // 2 to 34 kpc
+      const phi = Math.random() * 2 * Math.PI;
+      const costheta = 2 * Math.random() - 1;
+      const sintheta = Math.sqrt(Math.max(0, 1 - costheta * costheta));
+
+      // Mild flattening in inner halo (c/a ~ 0.8)
+      const q = 0.8;
+      const x = r * sintheta * Math.cos(phi);
+      const y = r * sintheta * Math.sin(phi);
+      const z = r * costheta * q;
+
+      this.haloPositions[idx] = x;
+      this.haloPositions[idx + 1] = y;
+      this.haloPositions[idx + 2] = z;
+      this.baseHaloZ[i] = z;
+
+      // Faint antique gold / pale blue-white
+      const color = new THREE.Color();
+      if (Math.random() < 0.6) {
+        color.setHSL(0.12, 0.4, 0.55 + Math.random() * 0.2);
+      } else {
+        color.setHSL(0.55, 0.3, 0.7 + Math.random() * 0.2);
+      }
+      haloColors[idx] = color.r;
+      haloColors[idx + 1] = color.g;
+      haloColors[idx + 2] = color.b;
+    }
+
+    haloGeom.setAttribute('position', new THREE.BufferAttribute(this.haloPositions, 3));
+    haloGeom.setAttribute('color', new THREE.BufferAttribute(haloColors, 3));
+
+    const haloMat = new THREE.PointsMaterial({
+      size: 0.10,
+      vertexColors: true,
+      map: starTex,
+      transparent: true,
+      opacity: 0.55,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+    });
+    this.haloPoints = new THREE.Points(haloGeom, haloMat);
+    this.haloGroup.add(this.haloPoints);
+
+    // 4. Globular Clusters (158 known Harris catalog clusters, spherical distribution)
+    const globGeom = new THREE.BufferGeometry();
+    this.globularPositions = new Float32Array(numGlobular * 3);
+    this.baseGlobularZ = new Float32Array(numGlobular);
+    const globColors = new Float32Array(numGlobular * 3);
+
+    for (let i = 0; i < numGlobular; i++) {
+      const idx = i * 3;
+      // Isotropic spherical distribution with core concentration
+      const u = Math.random();
+      const r = 1.0 + Math.pow(u, 0.6) * 33.0; // 1 to 34 kpc
+      const phi = Math.random() * 2 * Math.PI;
+      const costheta = 2 * Math.random() - 1;
+      const sintheta = Math.sqrt(Math.max(0, 1 - costheta * costheta));
+
+      const x = r * sintheta * Math.cos(phi);
+      const y = r * sintheta * Math.sin(phi);
+      const z = r * costheta;
+
+      this.globularPositions[idx] = x;
+      this.globularPositions[idx + 1] = y;
+      this.globularPositions[idx + 2] = z;
+      this.baseGlobularZ[i] = z;
+
+      // Bright incandescent gold
+      globColors[idx] = 1.0;
+      globColors[idx + 1] = 0.88;
+      globColors[idx + 2] = 0.55;
+    }
+
+    globGeom.setAttribute('position', new THREE.BufferAttribute(this.globularPositions, 3));
+    globGeom.setAttribute('color', new THREE.BufferAttribute(globColors, 3));
+
+    const globMat = new THREE.PointsMaterial({
+      size: 0.55,
+      vertexColors: true,
+      map: starTex,
+      transparent: true,
+      opacity: 0.95,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+    });
+    this.globularPoints = new THREE.Points(globGeom, globMat);
+    this.haloGroup.add(this.globularPoints);
+
+    // 5. Dark Matter Halo Virial Boundary Shells (25 kpc & 40 kpc spherical guides)
+    this.dmBoundary = this.createDarkMatterGuides();
+    this.haloGroup.add(this.dmBoundary);
+
+    this.group.add(this.haloGroup);
+
+    // 6. Central Black Hole: Sagittarius A*
     this.sgrAMarker = new THREE.Group();
     const bhCoreGeom = new THREE.SphereGeometry(0.08, 32, 16);
     const bhCoreMat = new THREE.MeshBasicMaterial({ color: 0x000000 });
@@ -170,11 +283,11 @@ export class GalaxyVisual {
       blending: THREE.AdditiveBlending,
     });
     const accRing = new THREE.Mesh(accGeom, accMat);
-    accRing.rotation.x = Math.PI * 0.15; // slightly tilted
+    accRing.rotation.x = Math.PI * 0.15;
     this.sgrAMarker.add(accRing);
     this.group.add(this.sgrAMarker);
 
-    // 4. Sun's Orbit Path (Rosette + Bobbing Trajectory)
+    // 7. Sun's Orbit Path (Rosette + Bobbing Trajectory)
     this.orbitGeom = new THREE.BufferGeometry();
     const orbitMat = new THREE.LineBasicMaterial({
       color: 0xffd700,
@@ -185,16 +298,14 @@ export class GalaxyVisual {
     this.orbitLine = new THREE.Line(this.orbitGeom, orbitMat);
     this.group.add(this.orbitLine);
 
-    // 5. Sun / Solar System Marker
+    // 8. Sun / Solar System Marker
     this.sunMarker = new THREE.Group();
 
-    // Glowing Sun sphere
     const sunGeom = new THREE.SphereGeometry(0.12, 32, 16);
     const sunMat = new THREE.MeshBasicMaterial({ color: 0xffea00 });
     const sunMesh = new THREE.Mesh(sunGeom, sunMat);
     this.sunMarker.add(sunMesh);
 
-    // Outer glow halo
     const glowGeom = new THREE.SphereGeometry(0.24, 32, 16);
     const glowMat = new THREE.MeshBasicMaterial({
       color: 0xffaa00,
@@ -204,7 +315,7 @@ export class GalaxyVisual {
     });
     this.sunMarker.add(new THREE.Mesh(glowGeom, glowMat));
 
-    // Solar System Ecliptic Disc representation tilted at 60.2° to Galactic Midplane
+    // Solar System Ecliptic Disc tilted at 60.2° to Galactic Midplane
     const eclipticGeom = new THREE.RingGeometry(0.18, 0.45, 48);
     const eclipticMat = new THREE.MeshBasicMaterial({
       color: 0x00e5ff,
@@ -213,11 +324,9 @@ export class GalaxyVisual {
       opacity: 0.5,
     });
     this.eclipticPlane = new THREE.Mesh(eclipticGeom, eclipticMat);
-    // Ecliptic tilt: ~60.2 degrees relative to galactic plane
     this.eclipticPlane.rotation.x = THREE.MathUtils.degToRad(60.2);
     this.sunMarker.add(this.eclipticPlane);
 
-    // Velocity vector arrow helper (pointing in direction of galactic travel)
     this.velArrow = new THREE.ArrowHelper(
       new THREE.Vector3(0, 1, 0),
       new THREE.Vector3(0, 0, 0),
@@ -230,15 +339,15 @@ export class GalaxyVisual {
 
     this.group.add(this.sunMarker);
 
-    // 6. Galactic Reference Guides (Rings and Coordinate Axes)
+    // 9. Galactic Reference Guides
     this.gridGroup = this.createGalacticGuides();
     this.group.add(this.gridGroup);
 
-    // Start with Galaxy visual visible
     this.group.visible = false;
   }
 
   private createStarTexture(): THREE.Texture {
+    if (typeof document === 'undefined') return new THREE.Texture();
     const canvas = document.createElement('canvas');
     canvas.width = 64;
     canvas.height = 64;
@@ -250,8 +359,46 @@ export class GalaxyVisual {
     grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
     ctx.fillStyle = grad;
     ctx.fillRect(0, 0, 64, 64);
-    const texture = new THREE.CanvasTexture(canvas);
-    return texture;
+    return new THREE.CanvasTexture(canvas);
+  }
+
+  private createDarkMatterGuides(): THREE.Group {
+    const group = new THREE.Group();
+    const radii = [25.0, 40.0]; // kpc
+    const segs = 128;
+    const mat = new THREE.LineBasicMaterial({
+      color: 0x554477,
+      transparent: true,
+      opacity: 0.25,
+    });
+
+    for (const r of radii) {
+      // Equator
+      const eqPts: THREE.Vector3[] = [];
+      for (let i = 0; i <= segs; i++) {
+        const th = (i / segs) * 2 * Math.PI;
+        eqPts.push(new THREE.Vector3(r * Math.cos(th), r * Math.sin(th), 0));
+      }
+      group.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(eqPts), mat));
+
+      // Meridian XZ
+      const m1Pts: THREE.Vector3[] = [];
+      for (let i = 0; i <= segs; i++) {
+        const th = (i / segs) * 2 * Math.PI;
+        m1Pts.push(new THREE.Vector3(r * Math.cos(th), 0, r * Math.sin(th)));
+      }
+      group.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(m1Pts), mat));
+
+      // Meridian YZ
+      const m2Pts: THREE.Vector3[] = [];
+      for (let i = 0; i <= segs; i++) {
+        const th = (i / segs) * 2 * Math.PI;
+        m2Pts.push(new THREE.Vector3(0, r * Math.cos(th), r * Math.sin(th)));
+      }
+      group.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(m2Pts), mat));
+    }
+
+    return group;
   }
 
   private createGalacticGuides(): THREE.Group {
@@ -309,6 +456,20 @@ export class GalaxyVisual {
       bPos[i * 3 + 2] = this.baseBulgeZ[i]! * factor;
     }
     this.bulgePoints.geometry.attributes['position']!.needsUpdate = true;
+
+    // Update stellar halo
+    const hPos = this.haloPositions;
+    for (let i = 0; i < this.baseHaloZ.length; i++) {
+      hPos[i * 3 + 2] = this.baseHaloZ[i]! * factor;
+    }
+    this.haloPoints.geometry.attributes['position']!.needsUpdate = true;
+
+    // Update globular clusters
+    const gPos = this.globularPositions;
+    for (let i = 0; i < this.baseGlobularZ.length; i++) {
+      gPos[i * 3 + 2] = this.baseGlobularZ[i]! * factor;
+    }
+    this.globularPoints.geometry.attributes['position']!.needsUpdate = true;
   }
 
   setOrbitPath(pathPoints: Float32Array): void {
@@ -326,7 +487,6 @@ export class GalaxyVisual {
     const sunZ = state.z * this.zExaggeration;
     this.sunMarker.position.set(state.x, state.y, sunZ);
 
-    // Update velocity arrow direction
     const vLen = Math.hypot(state.vx, state.vy, state.vz) || 1;
     const dir = new THREE.Vector3(state.vx / vLen, state.vy / vLen, (state.vz * this.zExaggeration) / vLen);
     this.velArrow.setDirection(dir.normalize());
@@ -340,8 +500,13 @@ export class GalaxyVisual {
     this.sunMarker.visible = !isSolar;
     this.orbitLine.visible = !isSolar;
     this.gridGroup.visible = !isSolar;
+    this.haloGroup.visible = !isSolar;
     (this.starsPoints.material as THREE.PointsMaterial).size = isSolar ? 1.6 : 0.12;
     (this.bulgePoints.material as THREE.PointsMaterial).size = isSolar ? 2.4 : 0.18;
+  }
+
+  setHaloVisible(visible: boolean): void {
+    this.haloGroup.visible = visible;
   }
 
   setVisible(visible: boolean): void {

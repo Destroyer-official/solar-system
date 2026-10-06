@@ -12,6 +12,7 @@ import { BodyVisual, type ScaleMode } from './bodyVisual';
 import { createStarfield } from './starfield';
 import { Trail } from './trail';
 import { GalaxyVisual } from './galaxyVisual';
+import { OortCloudVisual } from './oortCloud';
 import type { GalacticOrbitState } from '@/physics/galacticPotential';
 
 const MIN_PIXEL_RADIUS = 4;
@@ -19,6 +20,8 @@ const MIN_PIXEL_RADIUS = 4;
 export interface ViewState {
   mode?: 'solar' | 'galaxy';
   showMilkyWay?: boolean;
+  showOortCloud?: boolean;
+  showGalacticHalo?: boolean;
   galaxyState?: GalacticOrbitState;
   galaxyCamera?: string;
   galaxyZExag?: number;
@@ -50,13 +53,14 @@ export function createViewer(
   container.appendChild(renderer.domElement);
 
   const scene = new THREE.Scene();
-  const camera = new THREE.PerspectiveCamera(50, 1, 1e-6, 1e5);
+  // Near 1e-6 AU to Far 5e6 AU for seamless zooming from planetary radii out to 100,000 AU Oort cloud
+  const camera = new THREE.PerspectiveCamera(50, 1, 1e-6, 5e6);
   camera.up.set(0, 0, 1);
 
   const controls = new OrbitControls(camera, renderer.domElement);
   controls.enableDamping = true;
   controls.minDistance = 1e-6;
-  controls.maxDistance = 2000;
+  controls.maxDistance = 500_000;
 
   // 1. Starfield background
   scene.add(createStarfield(9000, 30000));
@@ -127,6 +131,10 @@ export function createViewer(
   const galaxyVisual = new GalaxyVisual();
   scene.add(galaxyVisual.group);
 
+  // Oort cloud visual
+  const oortVisual = new OortCloudVisual();
+  scene.add(oortVisual.group);
+
   function setView(dir: readonly [number, number, number], distanceAu: number): void {
     camera.position.set(dir[0], dir[1], dir[2]).setLength(distanceAu);
     controls.target.set(0, 0, 0);
@@ -160,22 +168,10 @@ export function createViewer(
     controls.update();
   }
 
-  let height = 1;
-  const resize = () => {
-    const w = container.clientWidth,
-      h = container.clientHeight;
-    height = h;
-    renderer.setSize(w, h);
-    camera.aspect = w / h;
-    camera.updateProjectionMatrix();
-  };
-  new ResizeObserver(resize).observe(container);
-  resize();
-
-  const o = [0, 0, 0],
-    p = [0, 0, 0],
-    f = [0, 0, 0],
-    w = [0, 0, 0];
+  const p: [number, number, number] = [0, 0, 0];
+  const o: [number, number, number] = [0, 0, 0];
+  const f: [number, number, number] = [0, 0, 0];
+  const w: [number, number, number] = [0, 0, 0];
 
   function render(s: SystemState, v: ViewState): void {
     const isGalaxy = v.mode === 'galaxy';
@@ -183,10 +179,12 @@ export function createViewer(
     if (isGalaxy) {
       galaxyVisual.setVisible(true);
       galaxyVisual.setSolarMode(false);
+      galaxyVisual.setHaloVisible(v.showGalacticHalo !== false);
       galaxyVisual.group.position.set(0, 0, 0);
       galaxyVisual.group.rotation.set(0, 0, 0);
       galaxyVisual.group.scale.set(1, 1, 1);
 
+      oortVisual.setVisible(false);
       for (const vis of visuals) vis.group.visible = false;
       for (const t of trails) t.line.visible = false;
       bary.visible = false;
@@ -221,6 +219,7 @@ export function createViewer(
       mapPoint(ax, o, 0, 0, 0, f);
     }
 
+    const { height } = renderer.domElement;
     const k = (2 * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * MIN_PIXEL_RADIUS) / height;
     const daysSinceJ2000 = model.epochJd - JD_J2000 + s.t;
     const scaleMode = v.scaleMode ?? 'pixels';
@@ -252,10 +251,20 @@ export function createViewer(
       }
     }
 
+    // Oort cloud visual in solar mode
+    if (v.showOortCloud) {
+      oortVisual.setVisible(true);
+      // Center Oort cloud at the Sun's current rendered position
+      oortVisual.group.position.copy(visuals[0]!.group.position);
+    } else {
+      oortVisual.setVisible(false);
+    }
+
     // Milky Way Galaxy background in Solar mode
     if (v.showMilkyWay !== false) {
       galaxyVisual.setVisible(true);
       galaxyVisual.setSolarMode(true);
+      galaxyVisual.setHaloVisible(false); // keep solar background clear
 
       const S_GAL = 60.0;
       const [GX_SIM, GY_SIM, GZ_SIM] = GALACTIC_AXES_IN_SIM;

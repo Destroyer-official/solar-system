@@ -16,6 +16,14 @@ export const PRESETS: Record<string, Preset> = {
     dist: 90,
     trailDays: 29220,
   },
+  oort: {
+    label: 'Oort Cloud (100,000 AU Sphere)',
+    frame: 'body:sun',
+    focus: 'sun',
+    dir: [0.25, -0.7, 0.65],
+    dist: 120000,
+    trailDays: 36525,
+  },
   inner: {
     label: 'Inner planets',
     frame: 'body:sun',

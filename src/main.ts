@@ -1,31 +1,29 @@
 import './style.css';
 import { dateToJd, jdToDate, auDayToKms } from '@/data/constants';
-import { GALAXY_MODELS } from '@/data/galaxy';
-import { buildFrames } from '@/frames/registry';
-import { transformState } from '@/frames/transform';
-import { createViewer } from '@/render/viewer';
-import { relativeRows } from '@/sim/readout';
-import { ALL_BODIES, loadSystem } from '@/sim/registry';
+import { loadSystem } from '@/sim/registry';
 import { SimClient } from '@/sim/simClient';
 import { GalaxySim } from '@/sim/galaxySim';
 import { EphemerisProvider } from '@/sim/ephemeris';
 import { createStore, type AppState } from '@/sim/store';
+import { buildFrames } from '@/frames/registry';
+import { transformState } from '@/frames/transform';
+import { createViewer } from '@/render/viewer';
 import { createPanel } from '@/ui/panel';
 import { PRESETS } from '@/ui/presets';
+import { relativeRows } from '@/sim/readout';
 import { computeBodyFacts } from '@/sim/facts';
+import { GALAXY_MODELS } from '@/data/galaxy';
 
-const HISTORY_CAP = 20_000; // x 2 days = ~110 years
-const MAX_JUMP_DAYS = 73_050; // +-200 years (leapfrog accuracy degrades beyond this)
+const HISTORY_CAP = 20_000;
+const MAX_JUMP_DAYS = 73_050;
 
-const model = loadSystem(ALL_BODIES);
-const sun = model.ids.indexOf('sun');
+const model = loadSystem();
 const ephemeris = new EphemerisProvider(model);
 const validationTable = ephemeris.getValidationTable();
 
-function getLsrKms(modelId: string): number {
-  const m = GALAXY_MODELS.find((x) => x.id === modelId);
-  return m ? m.lsrKms : 220;
-}
+const sun = model.ids.indexOf('sun');
+
+const getLsrKms = (id: string) => GALAXY_MODELS.find((m) => m.id === id)?.lsrKms ?? 220;
 
 let frames = buildFrames(model.ids, model.names, getLsrKms('iau1985'));
 let frameById = new Map(frames.map((f) => [f.id, f]));
@@ -53,7 +51,9 @@ const galaxySim = new GalaxySim();
 
 const store = createStore<AppState>({
   mode: 'solar',
-  showMilkyWay: false,
+  showMilkyWay: true,
+  showOortCloud: false,
+  showGalacticHalo: true,
   dynamicsMode: 'simulation',
   galaxyModelId: 'iau1985',
   showRealityInspector: false,
@@ -64,11 +64,11 @@ const store = createStore<AppState>({
   galaxySpeed: 2.0,
   galaxyZExag: 1.0,
   galaxyCamera: 'perspective',
-  preset: 'giants',
+  preset: 'cosmic',
   trails: true,
-  frame: 'body:sun',
+  frame: 'galactic-aligned',
   focus: 'sun',
-  trailDays: 4383,
+  trailDays: 29220,
   scaleMode: 'pixels',
   scaleExaggeration: 20,
   selected: null,
@@ -94,6 +94,9 @@ function applyPreset(id: string): void {
   store.set('preset', id);
   store.set('frame', p.frame);
   store.set('focus', p.focus);
+  if (id === 'oort') {
+    store.set('showOortCloud', true);
+  }
   viewPreset(id);
 }
 function applyFrameDefaults(id: string): void {
@@ -159,7 +162,7 @@ store.subscribe((s, changed) => {
     ephemeris.interpolate(client.display.t, client.display.pos);
   }
 });
-applyPreset('giants');
+applyPreset('cosmic');
 
 const P = new Float64Array(3 * model.state.n),
   V = new Float64Array(3 * model.state.n);
@@ -191,6 +194,9 @@ function tick(now: number) {
 
   viewer.render(client.display, {
     mode: s.mode,
+    showMilkyWay: s.showMilkyWay,
+    showOortCloud: s.showOortCloud,
+    showGalacticHalo: s.showGalacticHalo,
     galaxyState: galaxySim.getState(),
     galaxyCamera: s.galaxyCamera,
     galaxyZExag: s.galaxyZExag,
