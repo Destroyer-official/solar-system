@@ -76,6 +76,7 @@ export class SimClient {
     const s = model.state;
     this.send({
       type: 'init',
+      ids: model.ids,
       t: s.t,
       gm: s.gm.slice(),
       pos: s.pos.slice(),

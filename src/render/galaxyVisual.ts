@@ -336,6 +336,14 @@ export class GalaxyVisual {
     return target.copy(this.sunMarker.position);
   }
 
+  setSolarMode(isSolar: boolean): void {
+    this.sunMarker.visible = !isSolar;
+    this.orbitLine.visible = !isSolar;
+    this.gridGroup.visible = !isSolar;
+    (this.starsPoints.material as THREE.PointsMaterial).size = isSolar ? 1.6 : 0.12;
+    (this.bulgePoints.material as THREE.PointsMaterial).size = isSolar ? 2.4 : 0.18;
+  }
+
   setVisible(visible: boolean): void {
     this.group.visible = visible;
   }

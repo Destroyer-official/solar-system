@@ -139,4 +139,26 @@ describe('frames', () => {
     expect(moved).toBeGreaterThan(48.7);
     expect(moved).toBeLessThan(49.2);
   });
+
+  it('cmb: the Sun moves at ~370 km/s relative to the cosmic microwave background', () => {
+    const { V } = inFrame('cmb', evolve(1500));
+    expect(Math.abs(kms(V, S) - 369.82)).toBeLessThan(0.05);
+  });
+
+  it('cmb-aligned: Sun speed matches Planck dipole ~369.82 km/s', () => {
+    const { V } = inFrame('cmb-aligned', evolve(1500));
+    expect(Math.abs(kms(V, S) - 369.82)).toBeLessThan(0.05);
+  });
+});
+
+describe('named galaxy models (speed honesty)', () => {
+  it.each([
+    { id: 'iau1985', lsrKms: 220, expectedTotal: 232.61 },
+    { id: 'reid2019', lsrKms: 236, expectedTotal: 248.60 },
+    { id: 'gravity2021', lsrKms: 240, expectedTotal: 252.59 },
+  ])('model $id computes speed within 0.1 km/s of formula', ({ lsrKms, expectedTotal }) => {
+    const v = sunVelocitySim(lsrKms);
+    const speedKms = auDayToKms(Math.hypot(...v));
+    expect(speedKms).toBeCloseTo(expectedTotal, 1);
+  });
 });

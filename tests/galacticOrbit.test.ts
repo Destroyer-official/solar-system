@@ -95,4 +95,33 @@ describe("Sun's Curved Galactic Orbit (Phase 6.4)", () => {
     expect(amplitudePc).toBeGreaterThan(60);
     expect(amplitudePc).toBeLessThan(140);
   });
+
+  it('straight vs curved: departure over 100 years is under 0.01 AU', () => {
+    const pot = new GalacticPotential();
+    const s = pot.getInitialSunState();
+    const x0 = s.x,
+      y0 = s.y,
+      z0 = s.z;
+    const vx0 = s.vx,
+      vy0 = s.vy,
+      vz0 = s.vz;
+
+    const years = 100;
+    const dtMyr = years / 1e6; // 1e-4 Myr
+    pot.step(s, dtMyr);
+
+    const dt = dtMyr * MYR_TO_TIME;
+    const xStraight = x0 + dt * vx0;
+    const yStraight = y0 + dt * vy0;
+    const zStraight = z0 + dt * vz0;
+
+    const diffKpc = Math.hypot(s.x - xStraight, s.y - yStraight, s.z - zStraight);
+    const KPC_TO_AU = 206264806.247;
+    const diffAu = diffKpc * KPC_TO_AU;
+
+    console.log(
+      `Curved vs straight departure after 100 yr: ${diffAu.toExponential(3)} AU (${(diffAu * 149597870.7).toFixed(0)} km)`,
+    );
+    expect(diffAu).toBeLessThan(0.01);
+  });
 });

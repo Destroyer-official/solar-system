@@ -3,6 +3,7 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { JD_J2000 } from '@/data/constants';
 import type { ReferenceFrame } from '@/frames/types';
 import { mapPoint, squash } from '@/frames/transform';
+import { GALACTIC_AXES_IN_SIM } from '@/frames/galactic';
 import type { SystemState } from '@/physics/types';
 import type { History } from '@/sim/history';
 import type { SystemModel } from '@/sim/registry';
@@ -17,6 +18,7 @@ const MIN_PIXEL_RADIUS = 4;
 
 export interface ViewState {
   mode?: 'solar' | 'galaxy';
+  showMilkyWay?: boolean;
   galaxyState?: GalacticOrbitState;
   galaxyCamera?: string;
   galaxyZExag?: number;
@@ -177,9 +179,14 @@ export function createViewer(
 
   function render(s: SystemState, v: ViewState): void {
     const isGalaxy = v.mode === 'galaxy';
-    galaxyVisual.setVisible(isGalaxy);
 
     if (isGalaxy) {
+      galaxyVisual.setVisible(true);
+      galaxyVisual.setSolarMode(false);
+      galaxyVisual.group.position.set(0, 0, 0);
+      galaxyVisual.group.rotation.set(0, 0, 0);
+      galaxyVisual.group.scale.set(1, 1, 1);
+
       for (const vis of visuals) vis.group.visible = false;
       for (const t of trails) t.line.visible = false;
       bary.visible = false;
@@ -200,7 +207,11 @@ export function createViewer(
       return;
     }
 
+    // Solar system mode: all bodies and trails active
+    for (const vis of visuals) vis.group.visible = true;
     sunLight.visible = true;
+    bary.visible = true;
+
     const ax = v.frame.axes;
     v.frame.origin(s.t, s.gm, s.pos, 0, o);
 
@@ -239,6 +250,51 @@ export function createViewer(
         const ringScale = visualRadius / vis.radiusAu;
         vis.ringMesh.scale.setScalar(ringScale);
       }
+    }
+
+    // Milky Way Galaxy background in Solar mode
+    if (v.showMilkyWay !== false) {
+      galaxyVisual.setVisible(true);
+      galaxyVisual.setSolarMode(true);
+
+      const S_GAL = 60.0;
+      const [GX_SIM, GY_SIM, GZ_SIM] = GALACTIC_AXES_IN_SIM;
+
+      const mRotEcl = new THREE.Matrix4().set(
+        GX_SIM[0]!, GY_SIM[0]!, GZ_SIM[0]!, 0,
+        GX_SIM[1]!, GY_SIM[1]!, GZ_SIM[1]!, 0,
+        GX_SIM[2]!, GY_SIM[2]!, GZ_SIM[2]!, 0,
+        0,          0,          0,          1,
+      );
+
+      let mRotScene = mRotEcl;
+      if (v.frame.axes) {
+        const frameAxes = v.frame.axes;
+        const mFrame = new THREE.Matrix4().set(
+          frameAxes[0]!, frameAxes[1]!, frameAxes[2]!, 0,
+          frameAxes[3]!, frameAxes[4]!, frameAxes[5]!, 0,
+          frameAxes[6]!, frameAxes[7]!, frameAxes[8]!, 0,
+          0,             0,             0,             1,
+        );
+        mRotScene = mFrame.clone().multiply(mRotEcl);
+      }
+
+      const sunGalX = v.galaxyState?.x ?? -8.2;
+      const sunGalY = v.galaxyState?.y ?? 0;
+      const sunGalZ = v.galaxyState?.z ?? 0.0208;
+
+      const sunGal = new THREE.Vector3(sunGalX, sunGalY, sunGalZ).multiplyScalar(S_GAL);
+      sunGal.applyMatrix4(mRotScene);
+
+      // visuals[0] is the Sun
+      const sunScenePos = visuals[0]!.group.position;
+      const galPos = sunScenePos.clone().sub(sunGal);
+
+      galaxyVisual.group.position.copy(galPos);
+      galaxyVisual.group.rotation.setFromRotationMatrix(mRotScene);
+      galaxyVisual.group.scale.set(S_GAL, S_GAL, S_GAL);
+    } else {
+      galaxyVisual.setVisible(false);
     }
 
     mapPoint(ax, o, 0, 0, 0, p);

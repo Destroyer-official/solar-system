@@ -286,6 +286,192 @@ export function createNeptuneTexture(): THREE.CanvasTexture {
   return tex;
 }
 
+
+export function createMoonTexture(): THREE.CanvasTexture {
+  const [canvas, ctx] = createCanvas(512, 256);
+  ctx.fillStyle = '#8f8e8b';
+  ctx.fillRect(0, 0, 512, 256);
+
+  ctx.fillStyle = '#595754';
+  const maria = [
+    [160, 90, 60, 45],
+    [230, 80, 45, 40],
+    [250, 130, 40, 30],
+    [290, 110, 35, 30],
+    [320, 140, 25, 25],
+  ];
+  for (const [x, y, rx, ry] of maria) {
+    ctx.beginPath();
+    ctx.ellipse(x!, y!, rx!, ry!, 0.1, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  for (let i = 0; i < 400; i++) {
+    const x = Math.random() * 512, y = Math.random() * 256, r = Math.random() * 4 + 1;
+    ctx.fillStyle = Math.random() > 0.3 ? '#b0aeaa' : '#454340';
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.wrapS = THREE.RepeatWrapping;
+  return tex;
+}
+
+export function createIoTexture(): THREE.CanvasTexture {
+  const [canvas, ctx] = createCanvas(512, 256);
+  ctx.fillStyle = '#e5c43b';
+  ctx.fillRect(0, 0, 512, 256);
+
+  ctx.fillStyle = 'rgba(215, 140, 35, 0.4)';
+  for (let i = 0; i < 150; i++) {
+    ctx.beginPath();
+    ctx.ellipse(Math.random() * 512, Math.random() * 256, Math.random() * 30 + 10, Math.random() * 15 + 5, Math.random() * Math.PI, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  for (let i = 0; i < 60; i++) {
+    const x = Math.random() * 512, y = Math.random() * 256;
+    ctx.fillStyle = '#c93414';
+    ctx.beginPath();
+    ctx.arc(x, y, Math.random() * 8 + 4, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#1c1510';
+    ctx.beginPath();
+    ctx.arc(x, y, Math.random() * 3 + 1, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.wrapS = THREE.RepeatWrapping;
+  return tex;
+}
+
+export function createEuropaTexture(): THREE.CanvasTexture {
+  const [canvas, ctx] = createCanvas(512, 256);
+  ctx.fillStyle = '#eaf0f8';
+  ctx.fillRect(0, 0, 512, 256);
+
+  ctx.strokeStyle = 'rgba(165, 92, 59, 0.6)';
+  ctx.lineWidth = 1.5;
+  for (let i = 0; i < 40; i++) {
+    ctx.beginPath();
+    ctx.moveTo(Math.random() * 512, Math.random() * 256);
+    ctx.bezierCurveTo(
+      Math.random() * 512, Math.random() * 256,
+      Math.random() * 512, Math.random() * 256,
+      Math.random() * 512, Math.random() * 256
+    );
+    ctx.stroke();
+  }
+
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.wrapS = THREE.RepeatWrapping;
+  return tex;
+}
+
+export function createGanymedeTexture(): THREE.CanvasTexture {
+  const [canvas, ctx] = createCanvas(512, 256);
+  ctx.fillStyle = '#655e56';
+  ctx.fillRect(0, 0, 512, 256);
+
+  ctx.strokeStyle = 'rgba(180, 195, 210, 0.5)';
+  ctx.lineWidth = 3;
+  for (let i = 0; i < 35; i++) {
+    ctx.beginPath();
+    ctx.moveTo(Math.random() * 512, Math.random() * 256);
+    ctx.lineTo(Math.random() * 512, Math.random() * 256);
+    ctx.stroke();
+  }
+
+  for (let i = 0; i < 150; i++) {
+    ctx.fillStyle = '#e8f0fc';
+    ctx.beginPath();
+    ctx.arc(Math.random() * 512, Math.random() * 256, Math.random() * 3 + 1, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.wrapS = THREE.RepeatWrapping;
+  return tex;
+}
+
+export function createCallistoTexture(): THREE.CanvasTexture {
+  const [canvas, ctx] = createCanvas(512, 256);
+  ctx.fillStyle = '#3f3a35';
+  ctx.fillRect(0, 0, 512, 256);
+
+  for (let i = 0; i < 500; i++) {
+    const x = Math.random() * 512, y = Math.random() * 256, r = Math.random() * 3 + 1;
+    ctx.fillStyle = Math.random() > 0.4 ? '#b8c4d0' : '#282420';
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.wrapS = THREE.RepeatWrapping;
+  return tex;
+}
+
+export function createTitanTexture(): THREE.CanvasTexture {
+  const [canvas, ctx] = createCanvas(512, 256);
+  const grad = ctx.createLinearGradient(0, 0, 0, 256);
+  grad.addColorStop(0, '#bd6e22');
+  grad.addColorStop(0.3, '#e08f32');
+  grad.addColorStop(0.5, '#ea9d3e');
+  grad.addColorStop(0.7, '#e08f32');
+  grad.addColorStop(1, '#a85b1a');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, 512, 256);
+
+  ctx.fillStyle = 'rgba(110, 60, 22, 0.35)';
+  for (let y = 110; y < 155; y += 8) {
+    ctx.fillRect(0, y, 512, 4);
+  }
+
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.wrapS = THREE.RepeatWrapping;
+  return tex;
+}
+
+export function createPlutoTexture(): THREE.CanvasTexture {
+  const [canvas, ctx] = createCanvas(512, 256);
+  ctx.fillStyle = '#8f5235';
+  ctx.fillRect(0, 0, 512, 256);
+
+  ctx.fillStyle = '#3a1f14';
+  ctx.fillRect(0, 120, 512, 50);
+
+  ctx.fillStyle = '#f6ede0';
+  ctx.beginPath();
+  ctx.ellipse(230, 130, 45, 55, 0.1, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.ellipse(275, 138, 35, 45, -0.15, 0, Math.PI * 2);
+  ctx.fill();
+
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.wrapS = THREE.RepeatWrapping;
+  return tex;
+}
+
+export function createCharonTexture(): THREE.CanvasTexture {
+  const [canvas, ctx] = createCanvas(512, 256);
+  ctx.fillStyle = '#7c7a78';
+  ctx.fillRect(0, 0, 512, 256);
+
+  ctx.fillStyle = '#683624';
+  ctx.beginPath();
+  ctx.ellipse(256, 30, 90, 30, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.wrapS = THREE.RepeatWrapping;
+  return tex;
+}
+
 export const PLANET_TEXTURE_GETTERS: Record<string, () => THREE.CanvasTexture> = {
   sun: createSunTexture,
   mercury: createMercuryTexture,
@@ -296,4 +482,12 @@ export const PLANET_TEXTURE_GETTERS: Record<string, () => THREE.CanvasTexture> =
   saturn: createSaturnTexture,
   uranus: createUranusTexture,
   neptune: createNeptuneTexture,
+  moon: createMoonTexture,
+  io: createIoTexture,
+  europa: createEuropaTexture,
+  ganymede: createGanymedeTexture,
+  callisto: createCallistoTexture,
+  titan: createTitanTexture,
+  pluto: createPlutoTexture,
+  charon: createCharonTexture,
 };

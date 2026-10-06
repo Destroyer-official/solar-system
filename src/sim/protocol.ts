@@ -5,6 +5,7 @@ export type ToWorker =
   | {
       type: 'init';
       bodies?: BodyJson[];
+      ids?: string[];
       physical?: Record<string, PhysicalJson>;
       config?: PhysicsConfig;
       t?: number;

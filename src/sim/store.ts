@@ -2,8 +2,15 @@ export type ScaleMode = 'true' | 'pixels' | 'exaggerated';
 export type AppMode = 'solar' | 'galaxy';
 export type GalaxyCamera = 'face-on' | 'edge-on' | 'follow-sun' | 'sgra' | 'perspective';
 
+export type DynamicsMode = 'simulation' | 'ephemeris';
+
 export interface AppState {
   mode: AppMode;
+  showMilkyWay: boolean;
+  dynamicsMode: DynamicsMode;
+  galaxyModelId: string;
+  showRealityInspector: boolean;
+  showValidationTable: boolean;
   playing: boolean;
   reversed: boolean;
   speed: number; // simulated days per real second (always positive)

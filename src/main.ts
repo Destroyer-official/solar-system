@@ -1,12 +1,14 @@
 import './style.css';
 import { dateToJd, jdToDate, auDayToKms } from '@/data/constants';
+import { GALAXY_MODELS } from '@/data/galaxy';
 import { buildFrames } from '@/frames/registry';
 import { transformState } from '@/frames/transform';
 import { createViewer } from '@/render/viewer';
 import { relativeRows } from '@/sim/readout';
-import { loadSystem } from '@/sim/registry';
+import { ALL_BODIES, loadSystem } from '@/sim/registry';
 import { SimClient } from '@/sim/simClient';
 import { GalaxySim } from '@/sim/galaxySim';
+import { EphemerisProvider } from '@/sim/ephemeris';
 import { createStore, type AppState } from '@/sim/store';
 import { createPanel } from '@/ui/panel';
 import { PRESETS } from '@/ui/presets';
@@ -15,17 +17,25 @@ import { computeBodyFacts } from '@/sim/facts';
 const HISTORY_CAP = 20_000; // x 2 days = ~110 years
 const MAX_JUMP_DAYS = 73_050; // +-200 years (leapfrog accuracy degrades beyond this)
 
-const model = loadSystem();
-const frames = buildFrames(model.ids, model.names);
-const frameById = new Map(frames.map((f) => [f.id, f]));
+const model = loadSystem(ALL_BODIES);
 const sun = model.ids.indexOf('sun');
+const ephemeris = new EphemerisProvider(model);
+const validationTable = ephemeris.getValidationTable();
 
-// Validate presets against the loaded system so typos fail loudly instead of
-// silently falling back to the barycenter.
+function getLsrKms(modelId: string): number {
+  const m = GALAXY_MODELS.find((x) => x.id === modelId);
+  return m ? m.lsrKms : 220;
+}
+
+let frames = buildFrames(model.ids, model.names, getLsrKms('iau1985'));
+let frameById = new Map(frames.map((f) => [f.id, f]));
+
+// Filter presets against the loaded system
+const validPresets: Record<string, (typeof PRESETS)[string]> = {};
 for (const [id, p] of Object.entries(PRESETS)) {
-  if (!frameById.has(p.frame)) throw new Error(`Preset "${id}": unknown frame "${p.frame}"`);
-  if (p.focus !== 'barycenter' && !model.ids.includes(p.focus))
-    throw new Error(`Preset "${id}": unknown focus "${p.focus}"`);
+  if (frameById.has(p.frame) && (p.focus === 'barycenter' || model.ids.includes(p.focus))) {
+    validPresets[id] = p;
+  }
 }
 
 const client = new SimClient(model, {
@@ -43,6 +53,11 @@ const galaxySim = new GalaxySim();
 
 const store = createStore<AppState>({
   mode: 'solar',
+  showMilkyWay: false,
+  dynamicsMode: 'simulation',
+  galaxyModelId: 'iau1985',
+  showRealityInspector: false,
+  showValidationTable: false,
   playing: true,
   reversed: false,
   speed: 100,
@@ -70,19 +85,19 @@ viewer.setGalaxyOrbitPath(galaxySim.generateOrbitPath(500, 0.5));
 const focusIndex = (id: string) => (id === 'barycenter' ? -1 : model.ids.indexOf(id));
 
 function viewPreset(id: string): void {
-  const p = PRESETS[id]!;
+  const p = validPresets[id] ?? PRESETS[id]!;
   viewer.setView(p.dir, p.dist);
   store.set('trailDays', p.trailDays);
 }
 function applyPreset(id: string): void {
-  const p = PRESETS[id]!;
+  const p = validPresets[id] ?? PRESETS[id]!;
   store.set('preset', id);
   store.set('frame', p.frame);
   store.set('focus', p.focus);
   viewPreset(id);
 }
 function applyFrameDefaults(id: string): void {
-  if (id.startsWith('galactic')) {
+  if (id.startsWith('galactic') || id.startsWith('cmb')) {
     store.set('focus', 'sun');
     store.set('trailDays', 730.5);
     store.set('compress', 0.05);
@@ -106,13 +121,23 @@ const panel = createPanel(document.getElementById('panel')!, store, {
     { id: 'barycenter', label: 'Barycenter' },
     ...model.ids.map((id, i) => ({ id, label: model.names[i]! })),
   ],
-  presets: Object.entries(PRESETS).map(([id, p]) => ({ id, label: p.label })),
+  presets: Object.entries(validPresets).map(([id, p]) => ({ id, label: p.label })),
+  galaxyModels: GALAXY_MODELS,
+  validationTable,
   onReset: () => client.reset(),
   onSeekDate: (d) => seekToJd(dateToJd(d)),
   onNow: () => seekToJd(dateToJd(new Date())),
+  onReseedHorizons: () => {
+    ephemeris.reseed(client.display.t, client.display);
+  },
   onGalaxyReset: () => galaxySim.reset(),
   onGalaxyCamera: (cam) =>
     viewer.setGalaxyView(cam, galaxySim.getState(), store.get().galaxyZExag),
+  onGalaxyModelChange: (modelId) => {
+    const lsr = getLsrKms(modelId);
+    frames = buildFrames(model.ids, model.names, lsr);
+    frameById = new Map(frames.map((f) => [f.id, f]));
+  },
   onPhysicsChange: (opts) => client.setPhysics(opts),
 });
 
@@ -130,6 +155,9 @@ store.subscribe((s, changed) => {
   if (changed === 'preset' && s.mode === 'solar') applyPreset(s.preset);
   if (changed === 'reversed') client.newDirection();
   if (changed === 'frame' && s.mode === 'solar') applyFrameDefaults(s.frame);
+  if (changed === 'dynamicsMode' && s.dynamicsMode === 'ephemeris') {
+    ephemeris.interpolate(client.display.t, client.display.pos);
+  }
 });
 applyPreset('giants');
 
@@ -150,8 +178,15 @@ function tick(now: number) {
   if (s.mode === 'galaxy') {
     if (s.playing) galaxySim.step(s.galaxySpeed * dtReal * (s.reversed ? -1 : 1));
   } else {
-    if (s.playing) client.request(s.speed * dtReal * (s.reversed ? -1 : 1));
-    client.updateDisplay();
+    if (s.dynamicsMode === 'ephemeris') {
+      if (s.playing) {
+        client.display.t += s.speed * dtReal * (s.reversed ? -1 : 1);
+      }
+      ephemeris.interpolate(client.display.t, client.display.pos);
+    } else {
+      if (s.playing) client.request(s.speed * dtReal * (s.reversed ? -1 : 1));
+      client.updateDisplay();
+    }
   }
 
   viewer.render(client.display, {
@@ -188,8 +223,8 @@ function tick(now: number) {
         dateUtc: jdToDate(model.epochJd + client.display.t).toISOString().slice(0, 19) + ' UTC',
         sunBaryAu: client.baryDist[sun]!,
         sunSpeedKms: sunSpeedKms(s.frame),
-        energyDrift: client.energyDrift,
-        angMomDrift: client.angMomDrift,
+        energyDrift: s.dynamicsMode === 'ephemeris' ? 0 : client.energyDrift,
+        angMomDrift: s.dynamicsMode === 'ephemeris' ? 0 : client.angMomDrift,
         rows: relativeRows(client.display, model.names, sun),
         busy: client.busy,
         selectedFacts,

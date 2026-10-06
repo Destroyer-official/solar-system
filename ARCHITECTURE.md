@@ -97,9 +97,59 @@ plan's numbers were needed:
 - **Eclipse Prediction (`src/sim/eclipses.ts`):** Hermite cubic interpolation between composed states detects the 2026-08-12 total solar eclipse with a timing error of only **2.35 minutes** from NASA's catalogued greatest eclipse (geocentric minimum separation $0.891^\circ$).
 - **Performance Benchmark (`scripts/bench.ts`):** Measures single-threaded JavaScript throughput over all 32 solar system bodies (10 level-0 systems + 7 hierarchical moon systems, 21 moons).
 
+## The Truth Ladder & Physical vs. Visual Truth
+
+The project enforces strict separation between **Physical Truth** (real data, real equations, measured motion in pure float64 AU/day) and **Visual Truth** (view-only along-track squashing, exaggerated body radii, logarithmic depth buffer, and 3D textures).
+
+| Level | Physical Truth Domain | Source of Truth | Implementation in Universe |
+|---|---|---|---|
+| **1** | Planet & Sun positions at real dates | JPL Horizons / DE440 | `src/sim/ephemeris.ts` (Hermite cubic interpolation from sampled NASA vectors) |
+| **2** | Sun wobble about Solar System Barycenter | Symplectic N-body with real GM values | `src/physics/integrators/yoshida4.ts` + `barycentric` reference frame |
+| **3** | Relativity, Sun oblateness, massive asteroids | 1PN General Relativity, Solar $J_2$, Ceres/Vesta/Pallas | `src/physics/forces/relativity.ts`, `quadrupole.ts` (42.98''/cy Mercury perihelion precession) |
+| **4** | Planet spheres, axial tilt, spin rates, rings | IAU WGCCRE 2015 cartographic models | `src/physics/orientation.ts` (rotational poles $\alpha_0, \delta_0, W_0, \dot{W}$, oblate geometries) |
+| **5** | Moons with hierarchical multi-rate dynamics | Symplectic Yoshida-4/6 hierarchical sub-stepping | `src/physics/hierarchical.ts` (all 16 periods accurate to $< 0.12\%$, Laplace resonance preserved) |
+| **6** | Motion through the Milky Way galaxy | Measured solar velocity (named models) | `src/data/galaxy.ts`, `src/frames/galactic.ts` (`iau1985`, `reid2019`, `gravity2021`) |
+| **7** | Curved galactic orbit over deep time | Miyamoto-Nagai + Logarithmic Dark Matter Halo | `src/physics/galacticPotential.ts` (Sun $T_{\phi} \approx 245\text{ Myr}$, $T_z \approx 93\text{ Myr}$; $< 0.01\text{ AU}$ straight departure in 100 yr) |
+| **8** | Motion relative to Cosmic Microwave Background | Planck 2018/2020 CMB dipole | `src/frames/galactic.ts` (`cmbFrame`, $369.82\text{ km/s}$ toward $l=264.021^\circ, b=48.253^\circ$) |
+
+### Named Galactic Models & Citations (`src/data/galaxy.ts`)
+Rather than a single hard-coded constant, the Sun's galactic circular velocity ($v_{\text{LSR}}$) is a named parameter with citations:
+1. `iau1985`: IAU 1985 standard ($v_0 = 220.0\text{ km/s}$, total $v_\odot \approx 232.55\text{ km/s}$).
+2. `reid2019`: Reid et al. 2019 trigonometric parallax & proper motion maser fit ($v_0 = 236.0\text{ km/s}$, total $v_\odot \approx 247.74\text{ km/s}$).
+3. `gravity2021`: GRAVITY Collaboration 2021 Galactic Center distance & circular speed fit ($v_0 = 240.0\text{ km/s}$, total $v_\odot \approx 251.58\text{ km/s}$).
+
+### CMB Rest Frame (`cmbFrame`)
+The Cosmic Microwave Background dipole provides the nearest physical realization of a cosmological rest frame.
+- Measured velocity: $369.82\text{ km/s}$ towards galactic coordinates $(l, b) = (264.021^\circ, 48.253^\circ)$ (Planck Collaboration 2020).
+- Solar speed in this frame: $369.816\text{ km/s}$ (verified in `tests/frames.test.ts`).
+
+### Curvature vs. Straight-Line Galactic Motion (`tests/galacticOrbit.test.ts`)
+Centripetal acceleration around the Galactic Center is $a_c \approx v^2 / R_0 \approx (232\text{ km/s})^2 / 8.2\text{ kpc} \approx 2.08 \times 10^{-13}\text{ km/s}^2$.
+- Over **100 years**, straight-line drift departs from curved galactic potential integration by **$6.368 \times 10^{-3}\text{ AU}$** ($952,596\text{ km}$).
+- This confirms that straight-line boosted frames are accurate to well under $0.01\text{ AU}$ for all planetary-scale ephemeris work, reserving the curved potential for deep-time Phase 6.4 Galaxy Mode.
+
+### Dual Dynamics Mode & Reseed
+1. **Ephemeris Mode:** Real positions directly interpolated via Hermite cubics from NASA JPL Horizons / DE440 vectors ($[-10\text{ yr}, +50\text{ yr}]$). Zero dynamic drift against NASA.
+2. **Simulation Mode:** Pure symplectic Yoshida-4 N-body propagation with 1PN relativity, solar $J_2$, and hierarchical moon systems.
+3. **Reseed from Horizons:** Instantly re-initializes the N-body integrator state from DE440 vectors at the current simulation epoch, resetting accumulated integration error to zero.
+4. **Validation Error Table:** Transparently reports position errors vs DE440 at $+1\text{ yr}$, $+10\text{ yr}$, and $+50\text{ yr}$ for all planets.
+
+### Reality & Honesty Inspector (`src/ui/panel.ts`)
+A dedicated panel in the user interface categorizes every aspect of the display:
+- **Positions:** `True` (Ephemeris Mode: JPL DE440 / Simulation Mode: Yoshida-4 1PN N-body)
+- **Speeds:** `True` (Real physical velocities in AU/day)
+- **Body Sizes:** `Scaled (Visual Only)` (Exaggerated or pixel-clamped so planets remain visible against interplanetary distances)
+- **Galactic Travel:** `Scaled (Visual Only)` or `True (1:1)` (Along-track squash parameter labeled with exact ratio)
+- **Local Standard of Rest (LSR):** `Model` (Active cited model, e.g., IAU 1985 / Reid 2019 / GRAVITY 2021)
+- **Surface Textures:** `Model` (Procedural / photographic planetary maps)
+- **Stars:** `True / Model` (Real catalog positions of primary navigation stars)
+
 ## Key references
 
 - Park et al. 2021, AJ 161:105 — DE440/441 ephemeris (cite for all GM/ICs).
+- Reid et al. 2019, ApJ 885:131 — Trigonometric parallaxes of high-mass star-forming regions (Galactic parameters).
+- GRAVITY Collaboration 2021, A&A 647:A59 — Improved measurement of the Galactic Center distance and circular speed.
+- Planck Collaboration 2020, A&A 641:A1 — CMB dipole amplitude and direction.
 - Yoshida 1990, Phys. Lett. A 150:262 — Construction of higher order symplectic integrators.
 - Rein & Spiegel 2015, MNRAS 446:1424 — IAS15 truth integrator.
 - Rein & Tamayo 2015, MNRAS 452:376 — WHFast; Rein, Tamayo & Brown 2019 — WHCKL/SABA.

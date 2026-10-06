@@ -8,6 +8,14 @@ export interface Preset {
 }
 
 export const PRESETS: Record<string, Preset> = {
+  cosmic: {
+    label: 'Cosmic (Milky Way & All Bodies)',
+    frame: 'galactic-aligned',
+    focus: 'sun',
+    dir: [0.35, -0.75, 0.55],
+    dist: 90,
+    trailDays: 29220,
+  },
   inner: {
     label: 'Inner planets',
     frame: 'body:sun',
@@ -32,6 +40,38 @@ export const PRESETS: Record<string, Preset> = {
     dist: 85,
     trailDays: 36525,
   },
+  earthMoon: {
+    label: 'Earth & Moon',
+    frame: 'body:earth',
+    focus: 'earth',
+    dir: [0, -0.8, 0.45],
+    dist: 0.007,
+    trailDays: 28,
+  },
+  jupiterMoons: {
+    label: 'Jupiter & Galilean Moons',
+    frame: 'body:jupiter',
+    focus: 'jupiter',
+    dir: [0, -0.8, 0.45],
+    dist: 0.035,
+    trailDays: 18,
+  },
+  saturnMoons: {
+    label: 'Saturn & Moons',
+    frame: 'body:saturn',
+    focus: 'saturn',
+    dir: [0, -0.7, 0.55],
+    dist: 0.045,
+    trailDays: 80,
+  },
+  plutoCharon: {
+    label: 'Pluto & Charon',
+    frame: 'body:pluto',
+    focus: 'pluto',
+    dir: [0, -0.8, 0.5],
+    dist: 0.0004,
+    trailDays: 7,
+  },
   wobble: {
     label: 'Sun wobble',
     frame: 'barycentric',
@@ -45,7 +85,7 @@ export const PRESETS: Record<string, Preset> = {
     frame: 'body:earth',
     focus: 'earth',
     dir: [0, -0.8, 0.5],
-    dist: 0.0004, // ~60,000 km
+    dist: 0.0004,
     trailDays: 365.25,
   },
   mars: {
@@ -53,7 +93,7 @@ export const PRESETS: Record<string, Preset> = {
     frame: 'body:mars',
     focus: 'mars',
     dir: [0, -0.8, 0.5],
-    dist: 0.00025, // ~37,000 km
+    dist: 0.00025,
     trailDays: 686.98,
   },
   jupiter: {
@@ -61,7 +101,7 @@ export const PRESETS: Record<string, Preset> = {
     frame: 'body:jupiter',
     focus: 'jupiter',
     dir: [0, -0.8, 0.5],
-    dist: 0.0035, // ~520,000 km
+    dist: 0.0035,
     trailDays: 4332.59,
   },
   saturn: {
@@ -69,7 +109,7 @@ export const PRESETS: Record<string, Preset> = {
     frame: 'body:saturn',
     focus: 'saturn',
     dir: [0, -0.7, 0.6],
-    dist: 0.0055, // ~820,000 km (spectacular angle of rings)
+    dist: 0.0055,
     trailDays: 10759.22,
   },
 };

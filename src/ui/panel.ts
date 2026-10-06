@@ -3,6 +3,8 @@ import type { BodyRow } from '@/sim/readout';
 import type { AppStore, ScaleMode, GalaxyCamera } from '@/sim/store';
 import type { ComputedFacts } from '@/sim/facts';
 import type { GalaxyReadout } from '@/sim/galaxySim';
+import type { GalaxyModel } from '@/data/galaxy';
+import type { ValidationRow } from '@/sim/ephemeris';
 
 export interface Option {
   id: string;
@@ -14,11 +16,15 @@ export interface PanelContext {
   frames: Option[];
   focuses: Option[];
   presets: Option[];
+  galaxyModels: readonly GalaxyModel[];
+  validationTable: ValidationRow[];
   onReset(): void;
   onSeekDate(d: Date): void;
   onNow(): void;
+  onReseedHorizons?(): void;
   onGalaxyReset?(): void;
   onGalaxyCamera?(cam: GalaxyCamera): void;
+  onGalaxyModelChange?(modelId: string): void;
   onPhysicsChange?(opts: {
     integrator?: 'leapfrog' | 'yoshida4';
     relativity?: boolean;
@@ -53,6 +59,84 @@ export function createPanel(root: HTMLElement, store: AppStore, ctx: PanelContex
         <button id="modeGalaxy" class="tab-btn">Milky Way Galaxy</button>
       </div>
 
+      <!-- Dynamics Mode Bar (Truth & Ephemeris vs Simulation) -->
+      <div class="dynamics-bar">
+        <div id="dynamicsStatus" class="status-badge">● Simulation: Yoshida-4 + 1PN + J2</div>
+        <div class="row">
+          <button id="toggleDynamics" style="font-size:11px;padding:3px 6px;">Switch to JPL DE440</button>
+          <button id="reseedBtn" style="font-size:11px;padding:3px 6px;" title="Re-seed N-body from Horizons DE440 vectors to reset drift">Re-sync Horizons</button>
+          <button id="valTableBtn" style="font-size:11px;padding:3px 6px;">Validation</button>
+        </div>
+      </div>
+
+      <!-- Horizons Validation Table Box -->
+      <div id="valTableBox" class="val-table-container" style="display: none;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+          <strong style="color:#38bdf8;">Horizons DE440 vs N-Body Validation</strong>
+          <button id="closeValTable" style="padding:1px 5px;font-size:10px;">✕</button>
+        </div>
+        <div style="font-size:10px;color:#94a3b8;margin-bottom:6px;">
+          Yoshida-4 + 1PN General Relativity + Solar J2 vs JPL Horizons:
+        </div>
+        <table class="val-table">
+          <thead>
+            <tr><th>Body</th><th>Offset</th><th>Err (AU)</th><th>Err (km)</th></tr>
+          </thead>
+          <tbody>
+            ${ctx.validationTable
+              .map(
+                (r) => `
+              <tr>
+                <td>${r.name}</td>
+                <td>+${r.offsetYears} yr</td>
+                <td>${r.errAu.toExponential(1)}</td>
+                <td>${r.errKm.toLocaleString()} km</td>
+              </tr>`,
+              )
+              .join('')}
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Reality & Honesty Inspector Button & Box -->
+      <div>
+        <button id="toggleReality" style="width:100%;font-size:11px;padding:4px 8px;display:flex;justify-content:space-between;align-items:center;">
+          <span>Reality & Honesty Inspector</span>
+          <span id="realityArrow">▾</span>
+        </button>
+      </div>
+
+      <div id="realityInspector" class="reality-inspector" style="display: none;">
+        <div class="reality-item">
+          <span>Positions:</span>
+          <span id="realPosTag" class="reality-tag tag-model">Model</span>
+        </div>
+        <div class="reality-item">
+          <span>Speeds:</span>
+          <span class="reality-tag tag-true">True (float64)</span>
+        </div>
+        <div class="reality-item">
+          <span>Body Radii:</span>
+          <span id="realSizeTag" class="reality-tag tag-scaled">Scaled (visual only)</span>
+        </div>
+        <div class="reality-item">
+          <span>Galactic Travel:</span>
+          <span id="realTravelTag" class="reality-tag tag-scaled">Scaled (1:20 view)</span>
+        </div>
+        <div class="reality-item">
+          <span>Textures:</span>
+          <span class="reality-tag tag-model">Model (IAU map)</span>
+        </div>
+        <div class="reality-item">
+          <span>Stars:</span>
+          <span class="reality-tag tag-true">True (Hipparcos)</span>
+        </div>
+        <div class="reality-item">
+          <span>LSR Speed Model:</span>
+          <span id="realLsrTag" style="color:#ffd700;font-size:10px;">IAU 1985 (220 km/s)</span>
+        </div>
+      </div>
+
       <!-- Solar System View Controls -->
       <div id="solarSection" style="display: grid; gap: 8px;">
         <div class="row">
@@ -78,6 +162,15 @@ export function createPanel(root: HTMLElement, store: AppStore, ctx: PanelContex
           <input id="scaleExag" type="range" min="1" max="300" step="1" value="20">
           <span id="exagVal">20x</span>
         </label>
+        <label>Galactic Speed Model
+          <select id="solarGalaxyModel">
+            ${ctx.galaxyModels
+              .map(
+                (m) => `<option value="${m.id}">${m.label} - ${m.source.split('(')[0]}</option>`,
+              )
+              .join('')}
+          </select>
+        </label>
         <label>Integrator
           <select id="integrator">
             <option value="yoshida4" selected>Yoshida 4th Order</option>
@@ -96,6 +189,7 @@ export function createPanel(root: HTMLElement, store: AppStore, ctx: PanelContex
           </select>
         </label>
         <label><input id="trails" type="checkbox" checked> Trails</label>
+        <label><input id="showMilkyWay" type="checkbox"> Milky Way backdrop</label>
         <label>Along-track compression <input id="compress" type="range" min="-2" max="0" step="0.05" value="0"> <span id="cLabel">1:1</span></label>
         <div id="factsBox" class="facts-box" style="display:none;"></div>
         <pre id="readout"></pre>
@@ -111,6 +205,15 @@ export function createPanel(root: HTMLElement, store: AppStore, ctx: PanelContex
         <label>Galactic Time Speed
           <input id="galSpeed" type="range" min="0.1" max="15" step="0.1" value="2">
           <span id="galSpeedLabel">2.0 Myr/s</span>
+        </label>
+        <label>LSR Circular Speed Model
+          <select id="galaxyModel">
+            ${ctx.galaxyModels
+              .map(
+                (m) => `<option value="${m.id}">${m.label} - ${m.source.split('(')[0]}</option>`,
+              )
+              .join('')}
+          </select>
         </label>
         <label>Camera View
           <select id="galCamera">
@@ -131,6 +234,7 @@ export function createPanel(root: HTMLElement, store: AppStore, ctx: PanelContex
           <div><strong>Vertical Bobbing:</strong> ~93 Myr period (±111 pc)</div>
           <div><strong>Galactic Center:</strong> Sgr A* (8.2 kpc distance)</div>
           <div><strong>Ecliptic Tilt:</strong> 60.2° to Galactic Midplane</div>
+          <div><strong>CMB Dipole Speed:</strong> 369.82 km/s (Planck 2020)</div>
         </div>
 
         <pre id="galaxyReadout"></pre>
@@ -144,6 +248,21 @@ export function createPanel(root: HTMLElement, store: AppStore, ctx: PanelContex
   const modeGalaxyBtn = q<HTMLButtonElement>('#modeGalaxy');
   const solarSection = q<HTMLDivElement>('#solarSection');
   const galaxySection = q<HTMLDivElement>('#galaxySection');
+
+  // Dynamics mode & Reality inspector
+  const dynamicsStatus = q<HTMLSpanElement>('#dynamicsStatus');
+  const toggleDynamics = q<HTMLButtonElement>('#toggleDynamics');
+  const reseedBtn = q<HTMLButtonElement>('#reseedBtn');
+  const valTableBtn = q<HTMLButtonElement>('#valTableBtn');
+  const valTableBox = q<HTMLDivElement>('#valTableBox');
+  const closeValTable = q<HTMLButtonElement>('#closeValTable');
+  const toggleReality = q<HTMLButtonElement>('#toggleReality');
+  const realityArrow = q<HTMLSpanElement>('#realityArrow');
+  const realityInspector = q<HTMLDivElement>('#realityInspector');
+  const realPosTag = q<HTMLSpanElement>('#realPosTag');
+  const realSizeTag = q<HTMLSpanElement>('#realSizeTag');
+  const realTravelTag = q<HTMLSpanElement>('#realTravelTag');
+  const realLsrTag = q<HTMLSpanElement>('#realLsrTag');
 
   // Solar elements
   const play = q<HTMLButtonElement>('#play'),
@@ -159,9 +278,11 @@ export function createPanel(root: HTMLElement, store: AppStore, ctx: PanelContex
   const compressIn = q<HTMLInputElement>('#compress');
   const cLabel = q<HTMLSpanElement>('#cLabel');
   const factsBox = q<HTMLDivElement>('#factsBox');
-  const trailSel = q<HTMLSelectElement>('#trailDays'),
+  const showMilkyWayIn = q<HTMLInputElement>('#showMilkyWay');
+ const trailSel = q<HTMLSelectElement>('#trailDays'),
     dateIn = q<HTMLInputElement>('#date');
   const out = q<HTMLPreElement>('#readout');
+  const solarGalaxyModel = q<HTMLSelectElement>('#solarGalaxyModel');
 
   // Galaxy elements
   const galPlay = q<HTMLButtonElement>('#galPlay'),
@@ -173,6 +294,7 @@ export function createPanel(root: HTMLElement, store: AppStore, ctx: PanelContex
   const galZExag = q<HTMLInputElement>('#galZExag'),
     galZExagVal = q<HTMLSpanElement>('#galZExagVal');
   const galOut = q<HTMLPreElement>('#galaxyReadout');
+  const galaxyModel = q<HTMLSelectElement>('#galaxyModel');
 
   fill(frameSel, ctx.frames);
   fill(focusSel, ctx.focuses);
@@ -190,6 +312,38 @@ export function createPanel(root: HTMLElement, store: AppStore, ctx: PanelContex
     solarSection.style.display = isSolar ? 'grid' : 'none';
     galaxySection.style.display = isSolar ? 'none' : 'grid';
 
+    // Dynamics mode sync
+    const isEphem = s.dynamicsMode === 'ephemeris';
+    dynamicsStatus.className = `status-badge ${isEphem ? 'ephem' : ''}`;
+    dynamicsStatus.textContent = isEphem
+      ? '● NASA JPL DE440 Ephemeris (Exact to meters)'
+      : '● Simulation: Yoshida-4 + 1PN + J2';
+    toggleDynamics.textContent = isEphem
+      ? 'Switch to Simulation Mode'
+      : 'Switch to JPL DE440 Ephemeris';
+
+    // Reality inspector sync
+    realityInspector.style.display = s.showRealityInspector ? 'grid' : 'none';
+    realityArrow.textContent = s.showRealityInspector ? '▴' : '▾';
+    valTableBox.style.display = s.showValidationTable ? 'block' : 'none';
+
+    realPosTag.className = `reality-tag ${isEphem ? 'tag-true' : 'tag-model'}`;
+    realPosTag.textContent = isEphem ? 'True (DE440)' : 'Model (N-body)';
+
+    realSizeTag.className = `reality-tag ${s.scaleMode === 'true' ? 'tag-true' : 'tag-scaled'}`;
+    realSizeTag.textContent = s.scaleMode === 'true' ? 'True (IAU)' : 'Scaled (visual only)';
+
+    realTravelTag.className = `reality-tag ${s.compress === 1 ? 'tag-true' : 'tag-scaled'}`;
+    realTravelTag.textContent =
+      s.compress === 1 ? 'True (49 AU/yr)' : `Scaled (1:${Math.round(1 / s.compress)})`;
+
+    const activeModel = ctx.galaxyModels.find((m) => m.id === s.galaxyModelId);
+    if (activeModel) {
+      realLsrTag.textContent = activeModel.label;
+      galaxyModel.value = s.galaxyModelId;
+      solarGalaxyModel.value = s.galaxyModelId;
+    }
+
     // Solar sync
     play.textContent = s.playing ? 'Pause' : 'Play';
     rev.textContent = s.reversed ? 'Backward' : 'Forward';
@@ -203,6 +357,7 @@ export function createPanel(root: HTMLElement, store: AppStore, ctx: PanelContex
     scaleExagIn.value = String(s.scaleExaggeration);
     exagVal.textContent = `${s.scaleExaggeration}x`;
     compressIn.value = String(Math.log10(s.compress));
+    if (showMilkyWayIn) showMilkyWayIn.checked = !!s.showMilkyWay;
     const ratio = Math.round(1 / s.compress);
     cLabel.textContent = ratio === 1 ? '1:1' : `1:${ratio} (visual only)`;
 
@@ -219,6 +374,26 @@ export function createPanel(root: HTMLElement, store: AppStore, ctx: PanelContex
 
   modeSolarBtn.onclick = () => store.set('mode', 'solar');
   modeGalaxyBtn.onclick = () => store.set('mode', 'galaxy');
+
+  // Dynamics mode actions
+  toggleDynamics.onclick = () =>
+    store.set(
+      'dynamicsMode',
+      store.get().dynamicsMode === 'ephemeris' ? 'simulation' : 'ephemeris',
+    );
+  reseedBtn.onclick = () => ctx.onReseedHorizons?.();
+  valTableBtn.onclick = () =>
+    store.set('showValidationTable', !store.get().showValidationTable);
+  closeValTable.onclick = () => store.set('showValidationTable', false);
+  toggleReality.onclick = () =>
+    store.set('showRealityInspector', !store.get().showRealityInspector);
+
+  const handleGalaxyModel = (val: string) => {
+    store.set('galaxyModelId', val);
+    ctx.onGalaxyModelChange?.(val);
+  };
+  galaxyModel.onchange = () => handleGalaxyModel(galaxyModel.value);
+  solarGalaxyModel.onchange = () => handleGalaxyModel(solarGalaxyModel.value);
 
   // Solar actions
   play.onclick = () => store.set('playing', !store.get().playing);
@@ -242,6 +417,10 @@ export function createPanel(root: HTMLElement, store: AppStore, ctx: PanelContex
   trailSel.onchange = () => store.set('trailDays', Number(trailSel.value));
   q<HTMLInputElement>('#trails').onchange = (e) =>
     store.set('trails', (e.target as HTMLInputElement).checked);
+  if (showMilkyWayIn) {
+    showMilkyWayIn.onchange = (e) =>
+      store.set('showMilkyWay', (e.target as HTMLInputElement).checked);
+  }
 
   // Galaxy actions
   galPlay.onclick = () => store.set('playing', !store.get().playing);
