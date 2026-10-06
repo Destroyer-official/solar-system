@@ -1,0 +1,23 @@
+{
+  "id": "earth",
+  "name": "Earth",
+  "gmKm3S2": 403503.2356254802,
+  "radiusKm": 6378.137,
+  "color": "#4f8ff7",
+  "note": "Earth-Moon system barycenter and combined GM. Split in Phase 5.",
+  "source": "JPL Horizons COMMAND=3, CENTER=500@0, ecliptic/ICRF, JD 2461319.5 TDB; GM: gm_de440.tpc",
+  "initial": {
+    "type": "vectors",
+    "epochJd": 2461319.5,
+    "position": [
+      0.9754084752704395,
+      0.2094233648959392,
+      0.00007506634279858775
+    ],
+    "velocity": [
+      -0.0039646185869574,
+      0.01674163545497093,
+      -0.000001126140798194983
+    ]
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "id": "saturn",
+  "name": "Saturn",
+  "gmKm3S2": 37940584.8418,
+  "radiusKm": 60268,
+  "color": "#e3cf9a",
+  "note": "Saturn system barycenter (with moons).",
+  "source": "JPL Horizons COMMAND=6, CENTER=500@0, ecliptic/ICRF, JD 2461319.5 TDB; GM: gm_de440.tpc",
+  "initial": {
+    "type": "vectors",
+    "epochJd": 2461319.5,
+    "position": [
+      9.251124347284033,
+      1.788896550911129,
+      -0.3994495588052057
+    ],
+    "velocity": [
+      -0.001365307093484726,
+      0.005465245911396726,
+      -0.00004068968463462995
+    ]
+  }
+}

@@ -16,3 +16,10 @@ export const auDayToKms = (v: number) => (v * AU_KM) / DAY_S;
 
 /** Julian date of J2000.0 epoch */
 export const JD_J2000 = 2451545.0;
+
+/** Julian date of 1970-01-01T00:00:00Z */
+export const JD_UNIX_EPOCH = 2440587.5;
+
+/** Treats JD as UTC. Real TDB-UTC is ~69 s in 2026, irrelevant for display. */
+export const jdToDate = (jd: number): Date => new Date((jd - JD_UNIX_EPOCH) * DAY_S * 1000);
+export const dateToJd = (d: Date): number => d.getTime() / (DAY_S * 1000) + JD_UNIX_EPOCH;

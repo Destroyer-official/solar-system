@@ -1,0 +1,22 @@
+{
+  "id": "mercury",
+  "name": "Mercury",
+  "gmKm3S2": 22031.868551400003,
+  "radiusKm": 2440.53,
+  "color": "#a8a29e",
+  "source": "JPL Horizons COMMAND=1, CENTER=500@0, ecliptic/ICRF, JD 2461319.5 TDB; GM: gm_de440.tpc",
+  "initial": {
+    "type": "vectors",
+    "epochJd": 2461319.5,
+    "position": [
+      0.08880127893225637,
+      -0.4502989349591391,
+      -0.04454318405064851
+    ],
+    "velocity": [
+      0.02193986290538335,
+      0.007017566804003115,
+      -0.001438523939470531
+    ]
+  }
+}

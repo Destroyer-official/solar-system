@@ -8,12 +8,6 @@ import type { History } from '@/sim/history';
 import type { SystemModel } from '@/sim/registry';
 import { buildTracks } from '@/sim/track';
 import { Trail } from './trail';
-
-export type CameraPreset = 'system' | 'barycenter';
-const PRESET_POS: Record<CameraPreset, readonly [number, number, number]> = {
-  system: [0, -14, 8],
-  barycenter: [0, -0.025, 0.012],
-};
 const MIN_PIXEL_RADIUS = 4;
 
 export interface ViewState {
@@ -68,11 +62,7 @@ export function createViewer(container: HTMLElement, model: SystemModel, trailCa
     controls.target.set(0, 0, 0);
     controls.update();
   }
-  const setPreset = (p: CameraPreset) => {
-    const v = PRESET_POS[p];
-    setView(v, Math.hypot(v[0], v[1], v[2]));
-  };
-  setPreset('system');
+  setView([0, -0.8, 0.6], 35);
 
   let height = 1;
   const resize = () => {
@@ -124,5 +114,5 @@ export function createViewer(container: HTMLElement, model: SystemModel, trailCa
     renderer.render(scene, camera);
   }
 
-  return { render, setPreset, setView };
+  return { render, setView };
 }

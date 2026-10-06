@@ -2,7 +2,7 @@ export interface AppState {
   playing: boolean;
   reversed: boolean;
   speed: number; // simulated days per real second (always positive)
-  preset: 'system' | 'barycenter';
+  preset: string;
   trails: boolean;
   frame: string; // ReferenceFrame id
   focus: string; // 'barycenter' or a body id: what the camera follows

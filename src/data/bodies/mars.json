@@ -1,0 +1,23 @@
+{
+  "id": "mars",
+  "name": "Mars",
+  "gmKm3S2": 42828.3758157561,
+  "radiusKm": 3396.2,
+  "color": "#d1603d",
+  "note": "Mars system barycenter (with Phobos and Deimos).",
+  "source": "JPL Horizons COMMAND=4, CENTER=500@0, ecliptic/ICRF, JD 2461319.5 TDB; GM: gm_de440.tpc",
+  "initial": {
+    "type": "vectors",
+    "epochJd": 2461319.5,
+    "position": [
+      0.05885946312699107,
+      1.557795717097069,
+      0.0313741304848458
+    ],
+    "velocity": [
+      -0.01344712922469685,
+      0.001728422314217615,
+      0.0003659122178752555
+    ]
+  }
+}

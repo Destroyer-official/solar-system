@@ -1,0 +1,8 @@
+{
+  "id": "sun",
+  "name": "Sun",
+  "gmKm3S2": 132712440041.279419,
+  "radiusKm": 695700,
+  "color": "#ffcc33",
+  "initial": { "type": "root" }
+}

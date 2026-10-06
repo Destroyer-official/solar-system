@@ -1,0 +1,23 @@
+{
+  "id": "neptune",
+  "name": "Neptune",
+  "gmKm3S2": 6836527.100580399,
+  "radiusKm": 24764,
+  "color": "#4b70dd",
+  "note": "Neptune system barycenter (with moons).",
+  "source": "JPL Horizons COMMAND=8, CENTER=500@0, ecliptic/ICRF, JD 2461319.5 TDB; GM: gm_de440.tpc",
+  "initial": {
+    "type": "vectors",
+    "epochJd": 2461319.5,
+    "position": [
+      29.83549255549325,
+      1.390785382046078,
+      -0.7162302430810258
+    ],
+    "velocity": [
+      -0.0001668099946314406,
+      0.003154344129349651,
+      -0.00006111436517786673
+    ]
+  }
+}

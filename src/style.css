@@ -48,3 +48,9 @@ select {
   border: 1px solid #446;
   border-radius: 4px;
 }
+input[type='date'] {
+  background: #223;
+  color: #ddd;
+  border: 1px solid #446;
+  border-radius: 4px;
+}

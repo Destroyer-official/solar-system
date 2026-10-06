@@ -8,8 +8,9 @@ import { transformState } from '@/frames/transform';
 import { GALACTIC_AXES_IN_SIM, sunVelocitySim } from '@/frames/galactic';
 import { auDayToKms } from '@/data/constants';
 import type { SystemState } from '@/physics/types';
+import { PHASE1_BODIES } from './fixtures/phase1';
 
-const model = loadSystem();
+const model = loadSystem(PHASE1_BODIES);
 const S = model.ids.indexOf('sun'),
   J = model.ids.indexOf('jupiter');
 const frames = buildFrames(model.ids, model.names);

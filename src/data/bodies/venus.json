@@ -1,0 +1,22 @@
+{
+  "id": "venus",
+  "name": "Venus",
+  "gmKm3S2": 324858.592,
+  "radiusKm": 6051.8,
+  "color": "#e6c88a",
+  "source": "JPL Horizons COMMAND=2, CENTER=500@0, ecliptic/ICRF, JD 2461319.5 TDB; GM: gm_de440.tpc",
+  "initial": {
+    "type": "vectors",
+    "epochJd": 2461319.5,
+    "position": [
+      0.7238384983769436,
+      0.01302991073377998,
+      -0.04149090116023448
+    ],
+    "velocity": [
+      -0.0005849836719515345,
+      0.0201301234712613,
+      0.0003105302409651197
+    ]
+  }
+}

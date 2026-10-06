@@ -1,8 +1,22 @@
 {
   "id": "sun",
   "name": "Sun",
-  "gmKm3S2": 132712440041.279419,
+  "gmKm3S2": 132712440041.27942,
   "radiusKm": 695700,
   "color": "#ffcc33",
-  "initial": { "type": "root" }
+  "source": "JPL Horizons COMMAND=10, CENTER=500@0, ecliptic/ICRF, JD 2461319.5 TDB; GM: gm_de440.tpc",
+  "initial": {
+    "type": "vectors",
+    "epochJd": 2461319.5,
+    "position": [
+      -0.001215141218845277,
+      -0.00512773902902489,
+      0.00009401498125295157
+    ],
+    "velocity": [
+      0.000006043438013503497,
+      0.000002544458545336718,
+      -1.291134135259914e-7
+    ]
+  }
 }

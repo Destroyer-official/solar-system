@@ -40,4 +40,15 @@ describe('History', () => {
     h.clear();
     expect(h.count).toBe(0);
   });
+  it('pushRaw appends without interval filtering', () => {
+    const h = new History(2, 10, 100),
+      src = new Float64Array([9, 1, 2, 3, 4, 5, 6]); // [t, 6 coords]
+    h.pushRaw(src[0]!, src, 1);
+    h.pushRaw(7, src, 1);
+    expect(h.count).toBe(2);
+    expect(h.timeAt(0)).toBe(9);
+    expect(Array.from(h.positions.subarray(h.baseAt(0), h.baseAt(0) + 6))).toEqual([
+      1, 2, 3, 4, 5, 6,
+    ]);
+  });
 });

@@ -36,11 +36,16 @@ export class History {
 
   sample(s: SystemState): void {
     if (this.n_ > 0 && Math.abs(s.t - this.lastT) < this.intervalDays) return;
-    this.t[this.head] = s.t;
-    this.pos.set(s.pos, this.head * 3 * this.bodies);
+    this.pushRaw(s.t, s.pos, 0);
+  }
+
+  /** Append one snapshot without interval filtering (the worker already filtered). */
+  pushRaw(t: number, src: Float64Array, offset: number): void {
+    this.t[this.head] = t;
+    this.pos.set(src.subarray(offset, offset + 3 * this.bodies), this.head * 3 * this.bodies);
     this.head = (this.head + 1) % this.cap;
     this.n_ = Math.min(this.n_ + 1, this.cap);
-    this.lastT = s.t;
+    this.lastT = t;
   }
 
   private slot(k: number): number {

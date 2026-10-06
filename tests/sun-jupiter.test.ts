@@ -6,9 +6,10 @@ import { newtonianGravity } from '@/physics/forces/gravity';
 import { angularMomentum, centerOfMass, totalEnergy } from '@/physics/diagnostics';
 import { Engine } from '@/sim/engine';
 import { AU_KM } from '@/data/constants';
+import { PHASE1_BODIES } from './fixtures/phase1';
 
 const forces = [newtonianGravity];
-const model = loadSystem();
+const model = loadSystem(PHASE1_BODIES);
 const S = model.ids.indexOf('sun'),
   J = model.ids.indexOf('jupiter');
 const A = 5.202887,

@@ -6,8 +6,9 @@ import { newtonianGravity } from '@/physics/forces/gravity';
 import { buildFrames } from '@/frames/registry';
 import { History } from '@/sim/history';
 import { buildTracks } from '@/sim/track';
+import { PHASE1_BODIES } from './fixtures/phase1';
 
-const model = loadSystem();
+const model = loadSystem(PHASE1_BODIES);
 const S = model.ids.indexOf('sun'),
   J = model.ids.indexOf('jupiter');
 const frames = buildFrames(model.ids, model.names);

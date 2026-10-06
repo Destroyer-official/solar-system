@@ -1,8 +1,23 @@
 {
   "id": "jupiter",
   "name": "Jupiter",
-  "gmKm3S2": 126712764.1,
+  "gmKm3S2": 126712764.09999998,
   "radiusKm": 71492,
   "color": "#d9a066",
-  "initial": { "type": "elements", "parent": "sun", "aAu": 5.202887, "e": 0.04838624, "incDeg": 1.30439695 }
+  "note": "Jupiter system barycenter (with moons).",
+  "source": "JPL Horizons COMMAND=5, CENTER=500@0, ecliptic/ICRF, JD 2461319.5 TDB; GM: gm_de440.tpc",
+  "initial": {
+    "type": "vectors",
+    "epochJd": 2461319.5,
+    "position": [
+      -3.520456785006223,
+      3.968788568233106,
+      0.06232463161123371
+    ],
+    "velocity": [
+      -0.005735778501005273,
+      -0.004652363748325118,
+      0.0001476756291495031
+    ]
+  }
 }
