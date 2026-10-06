@@ -353,7 +353,7 @@ export function createPanel(root: HTMLElement, store: AppStore, ctx: PanelContex
     }
 
     valTableBox.style.display = s.showValidationTable ? 'block' : 'none';
-    realityInspector.style.display = s.showRealityInspector ? 'flex' : 'none';
+    realityInspector.style.display = s.showRealityInspector ? 'grid' : 'none';
     realityArrow.textContent = s.showRealityInspector ? '▴' : '▾';
 
     realSizeTag.textContent =

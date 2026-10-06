@@ -46,21 +46,36 @@ export function createViewer(
   trailCapacity: number,
   options?: ViewerOptions,
 ) {
+  const getWidth = () => container.clientWidth || window.innerWidth || 800;
+  const getHeight = () => container.clientHeight || window.innerHeight || 600;
+
   const renderer = new THREE.WebGLRenderer({ antialias: true, logarithmicDepthBuffer: true });
   renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+  renderer.setSize(getWidth(), getHeight());
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.1;
   container.appendChild(renderer.domElement);
 
   const scene = new THREE.Scene();
   // Near 1e-6 AU to Far 5e6 AU for seamless zooming from planetary radii out to 100,000 AU Oort cloud
-  const camera = new THREE.PerspectiveCamera(50, 1, 1e-6, 5e6);
+  const camera = new THREE.PerspectiveCamera(50, getWidth() / getHeight(), 1e-6, 5e6);
   camera.up.set(0, 0, 1);
 
   const controls = new OrbitControls(camera, renderer.domElement);
   controls.enableDamping = true;
   controls.minDistance = 1e-6;
   controls.maxDistance = 500_000;
+
+  function onResize() {
+    const w = getWidth();
+    const h = getHeight();
+    if (w > 0 && h > 0) {
+      camera.aspect = w / h;
+      camera.updateProjectionMatrix();
+      renderer.setSize(w, h);
+    }
+  }
+  window.addEventListener('resize', onResize);
 
   // 1. Starfield background
   scene.add(createStarfield(9000, 30000));
@@ -219,7 +234,7 @@ export function createViewer(
       mapPoint(ax, o, 0, 0, 0, f);
     }
 
-    const { height } = renderer.domElement;
+    const height = renderer.domElement.clientHeight || renderer.domElement.height || 600;
     const k = (2 * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * MIN_PIXEL_RADIUS) / height;
     const daysSinceJ2000 = model.epochJd - JD_J2000 + s.t;
     const scaleMode = v.scaleMode ?? 'pixels';
