@@ -83,4 +83,18 @@ describe('SimCore', () => {
     a.pos[0] = 12345;
     expect(core.handle({ type: 'advance', gen: 0, days: 0 })!.pos[0]).not.toBe(12345);
   });
+
+  it('setPhysics configures integrator and forces dynamically', () => {
+    const { core } = start();
+    const f = core.handle({
+      type: 'setPhysics',
+      integrator: 'yoshida4',
+      relativity: true,
+      quadrupole: true,
+      fixedDt: 0.25,
+    })!;
+    expect(f.type).toBe('frame');
+    const fAdv = core.handle({ type: 'advance', gen: 0, days: 1 })!;
+    expect(fAdv.advanced).toBeCloseTo(1, 6);
+  });
 });

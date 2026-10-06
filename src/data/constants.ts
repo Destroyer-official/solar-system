@@ -20,6 +20,18 @@ export const JD_J2000 = 2451545.0;
 /** Julian date of 1970-01-01T00:00:00Z */
 export const JD_UNIX_EPOCH = 2440587.5;
 
+/** Speed of light in km/s (exact by SI definition) */
+export const C_LIGHT_KMS = 299_792.458;
+
+/** Speed of light in AU/day */
+export const C_LIGHT_AU_DAY = (C_LIGHT_KMS * DAY_S) / AU_KM;
+
+/** Solar J2 quadrupole coefficient (Park et al. 2021 DE440) */
+export const SUN_J2 = 2.2e-7;
+
+/** Solar equatorial radius in km */
+export const SUN_RADIUS_KM = 695_700;
+
 /** Treats JD as UTC. Real TDB-UTC is ~69 s in 2026, irrelevant for display. */
 export const jdToDate = (jd: number): Date => new Date((jd - JD_UNIX_EPOCH) * DAY_S * 1000);
 export const dateToJd = (d: Date): number => d.getTime() / (DAY_S * 1000) + JD_UNIX_EPOCH;

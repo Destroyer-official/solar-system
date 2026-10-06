@@ -8,6 +8,17 @@ export type ToWorker =
       maxDt: number;
       maxSteps: number;
       historyIntervalDays: number;
+      integrator?: 'leapfrog' | 'yoshida4';
+      relativity?: boolean;
+      quadrupole?: boolean;
+      fixedDt?: number;
+    }
+  | {
+      type: 'setPhysics';
+      integrator?: 'leapfrog' | 'yoshida4';
+      relativity?: boolean;
+      quadrupole?: boolean;
+      fixedDt?: number;
     }
   | { type: 'advance'; gen: number; days: number }
   | { type: 'seek'; gen: number; t: number } // jump to absolute sim time (days from epoch)

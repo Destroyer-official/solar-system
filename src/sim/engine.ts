@@ -13,12 +13,14 @@ export class Engine {
   readonly state: SystemState;
   maxDt: number; // largest allowed step, days
   maxSteps: number; // per advance() call, so a fast slider slows the sim instead of freezing the page
+  fixedDt?: number; // fixed step size for exact symplectic energy conservation
   onStep?: (s: SystemState) => void;
-  private readonly forces: ForceModel[];
-  private readonly integrator: Integrator;
+  forces: ForceModel[];
+  integrator: Integrator;
   private readonly initial: SystemState;
   private readonly e0: number;
   private readonly l0: number;
+  private remainder = 0;
 
   constructor(
     state: SystemState,
@@ -26,12 +28,14 @@ export class Engine {
     integrator: Integrator,
     maxDt = 1,
     maxSteps = 5000,
+    fixedDt?: number,
   ) {
     this.state = state;
     this.forces = forces;
     this.integrator = integrator;
     this.maxDt = maxDt;
     this.maxSteps = maxSteps;
+    this.fixedDt = fixedDt;
     this.initial = cloneState(state);
     this.e0 = totalEnergy(state);
     this.l0 = Math.hypot(...angularMomentum(state));
@@ -40,8 +44,26 @@ export class Engine {
   /** Advance by `days` (negative = backwards). Returns the days actually advanced. */
   advance(days: number): number {
     if (days === 0) return 0;
-    const limit = this.maxSteps * this.maxDt;
+    const stepLimitDt = this.fixedDt ?? this.maxDt;
+    const limit = this.maxSteps * stepLimitDt;
     const d = Math.max(-limit, Math.min(limit, days));
+
+    if (this.fixedDt && this.fixedDt > 0) {
+      this.remainder += d;
+      const stepSign = Math.sign(this.remainder);
+      const stepSize = stepSign * this.fixedDt;
+      const numSteps = Math.min(
+        this.maxSteps,
+        Math.floor(Math.abs(this.remainder) / this.fixedDt),
+      );
+      for (let i = 0; i < numSteps; i++) {
+        this.integrator.step(this.state, this.forces, stepSize);
+        this.onStep?.(this.state);
+      }
+      this.remainder -= numSteps * stepSize;
+      return numSteps * stepSize;
+    }
+
     const steps = Math.max(1, Math.ceil(Math.abs(d) / this.maxDt));
     const dt = d / steps;
     for (let i = 0; i < steps; i++) {
@@ -55,6 +77,7 @@ export class Engine {
     this.state.t = this.initial.t;
     this.state.pos.set(this.initial.pos);
     this.state.vel.set(this.initial.vel);
+    this.remainder = 0;
   }
 
   diagnostics(): Diagnostics {

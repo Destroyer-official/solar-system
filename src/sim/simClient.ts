@@ -9,6 +9,10 @@ export interface ClientOptions {
   maxSteps: number;
   historyCap: number;
   historyIntervalDays: number;
+  integrator?: 'leapfrog' | 'yoshida4';
+  relativity?: boolean;
+  quadrupole?: boolean;
+  fixedDt?: number;
 }
 
 export class SimClient {
@@ -30,7 +34,7 @@ export class SimClient {
     this.state = cloneState(model.state);
     this.baryDist = new Float64Array(this.state.n);
     this.history = new History(this.state.n, o.historyCap, o.historyIntervalDays);
-    this.maxPending = o.maxSteps * o.maxDt;
+    this.maxPending = o.maxSteps * (o.fixedDt ?? o.maxDt);
 
     this.worker = new Worker(new URL('../workers/physics.worker.ts', import.meta.url), {
       type: 'module',
@@ -48,6 +52,10 @@ export class SimClient {
       maxDt: o.maxDt,
       maxSteps: o.maxSteps,
       historyIntervalDays: o.historyIntervalDays,
+      integrator: o.integrator,
+      relativity: o.relativity,
+      quadrupole: o.quadrupole,
+      fixedDt: o.fixedDt,
     });
   }
 
@@ -79,6 +87,16 @@ export class SimClient {
     this.bump();
     this.seeking = true;
     this.send({ type: 'seek', gen: this.gen, t });
+  }
+
+  /** Dynamically configure physics models and integrators in the worker. */
+  setPhysics(opts: {
+    integrator?: 'leapfrog' | 'yoshida4';
+    relativity?: boolean;
+    quadrupole?: boolean;
+    fixedDt?: number;
+  }): void {
+    this.send({ type: 'setPhysics', ...opts });
   }
 
   dispose(): void {

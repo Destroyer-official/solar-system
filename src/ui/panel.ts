@@ -15,6 +15,11 @@ export interface PanelContext {
   onReset(): void;
   onSeekDate(d: Date): void;
   onNow(): void;
+  onPhysicsChange?(opts: {
+    integrator?: 'leapfrog' | 'yoshida4';
+    relativity?: boolean;
+    quadrupole?: boolean;
+  }): void;
 }
 
 export interface PanelData {
@@ -42,6 +47,16 @@ export function createPanel(root: HTMLElement, store: AppStore, ctx: PanelContex
       <div class="row" id="presets"></div>
       <label>Frame <select id="frame"></select></label>
       <label>Camera follows <select id="focus"></select></label>
+      <label>Integrator
+        <select id="integrator">
+          <option value="yoshida4" selected>Yoshida 4th Order</option>
+          <option value="leapfrog">Leapfrog (2nd)</option>
+        </select>
+      </label>
+      <div class="row">
+        <label><input id="relativity" type="checkbox" checked> 1PN Relativity</label>
+        <label><input id="quadrupole" type="checkbox" checked> Solar J2</label>
+      </div>
       <label>Trail length
         <select id="trailDays">
           <option value="365.25">1 year</option><option value="730.5">2 years</option>
@@ -95,6 +110,21 @@ export function createPanel(root: HTMLElement, store: AppStore, ctx: PanelContex
   trailSel.onchange = () => store.set('trailDays', Number(trailSel.value));
   q<HTMLInputElement>('#trails').onchange = (e) =>
     store.set('trails', (e.target as HTMLInputElement).checked);
+
+  const intSel = q<HTMLSelectElement>('#integrator');
+  const relIn = q<HTMLInputElement>('#relativity');
+  const quadIn = q<HTMLInputElement>('#quadrupole');
+  const emitPhysics = () => {
+    ctx.onPhysicsChange?.({
+      integrator: intSel.value as 'leapfrog' | 'yoshida4',
+      relativity: relIn.checked,
+      quadrupole: quadIn.checked,
+    });
+  };
+  intSel.onchange = emitPhysics;
+  relIn.onchange = emitPhysics;
+  quadIn.onchange = emitPhysics;
+
   root.querySelectorAll<HTMLButtonElement>('[data-preset]').forEach((b) => {
     b.onclick = () => store.set('preset', b.dataset.preset!);
   });

@@ -31,6 +31,10 @@ const client = new SimClient(model, {
   maxSteps: 10_000,
   historyCap: HISTORY_CAP,
   historyIntervalDays: 2,
+  integrator: 'yoshida4',
+  relativity: true,
+  quadrupole: true,
+  fixedDt: 0.2,
 });
 const store = createStore<AppState>({
   playing: true,
@@ -85,6 +89,7 @@ const panel = createPanel(document.getElementById('panel')!, store, {
   onReset: () => client.reset(),
   onSeekDate: (d) => seekToJd(dateToJd(d)),
   onNow: () => seekToJd(dateToJd(new Date())),
+  onPhysicsChange: (opts) => client.setPhysics(opts),
 });
 
 store.subscribe((s, changed) => {

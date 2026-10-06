@@ -1,9 +1,24 @@
 import { newtonianGravity } from '@/physics/forces/gravity';
+import { GeneralRelativity } from '@/physics/forces/relativity';
+import { SolarQuadrupole } from '@/physics/forces/quadrupole';
 import { Leapfrog } from '@/physics/integrators/leapfrog';
-import type { SystemState } from '@/physics/types';
+import { Yoshida4 } from '@/physics/integrators/yoshida4';
+import type { ForceModel, Integrator, SystemState } from '@/physics/types';
 import { Engine } from './engine';
 import type { Frame, ToWorker } from './protocol';
 import { Recorder } from './recorder';
+
+function buildForces(relativity = false, quadrupole = false): ForceModel[] {
+  const forces: ForceModel[] = [newtonianGravity];
+  if (relativity) forces.push(new GeneralRelativity(0));
+  if (quadrupole) forces.push(new SolarQuadrupole(0));
+  return forces;
+}
+
+function buildIntegrator(name?: 'leapfrog' | 'yoshida4'): Integrator {
+  if (name === 'yoshida4') return new Yoshida4();
+  return new Leapfrog();
+}
 
 export class SimCore {
   private engine: Engine | null = null;
@@ -15,7 +30,16 @@ export class SimCore {
     if (msg.type === 'init') {
       const n = msg.gm.length;
       const state: SystemState = { t: msg.t, n, gm: msg.gm, pos: msg.pos, vel: msg.vel };
-      const engine = new Engine(state, [newtonianGravity], new Leapfrog(), msg.maxDt, msg.maxSteps);
+      const forces = buildForces(msg.relativity, msg.quadrupole);
+      const integrator = buildIntegrator(msg.integrator);
+      const engine = new Engine(
+        state,
+        forces,
+        integrator,
+        msg.maxDt,
+        msg.maxSteps,
+        msg.fixedDt,
+      );
       const rec = new Recorder(n, msg.historyIntervalDays, msg.maxSteps + 2);
       engine.onStep = (s) => {
         if (this.recording) rec.sample(s);
@@ -41,6 +65,16 @@ export class SimCore {
     };
 
     switch (msg.type) {
+      case 'setPhysics': {
+        const hasRel = engine.forces.some((f) => f.name === 'general-relativity-1pn');
+        const hasJ2 = engine.forces.some((f) => f.name === 'solar-quadrupole-j2');
+        const rel = msg.relativity !== undefined ? msg.relativity : hasRel;
+        const j2 = msg.quadrupole !== undefined ? msg.quadrupole : hasJ2;
+        engine.forces = buildForces(rel, j2);
+        if (msg.integrator) engine.integrator = buildIntegrator(msg.integrator);
+        if (msg.fixedDt !== undefined) engine.fixedDt = msg.fixedDt;
+        return this.frame(0);
+      }
       case 'advance':
         syncGen(msg.gen);
         return this.frame(engine.advance(msg.days));
