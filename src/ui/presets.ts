@@ -1,6 +1,6 @@
 export interface Preset {
   label: string;
-  category?: 'galaxy' | 'solar' | 'moons';
+  category?: 'galaxy' | 'solar' | 'moons' | 'visits';
   frame: string; // ReferenceFrame id
   focus: string; // 'barycenter' or body id
   dir: readonly [number, number, number]; // camera direction (normalized later)
@@ -141,41 +141,86 @@ export const PRESETS: Record<string, Preset> = {
     trailDays: 6.4,
   },
 
-  // 4. Close-Up Planet Visits
-  earth: {
+  // 4. Close-Up Planet Surface Visits
+  visitMercury: {
+    label: 'Visit Mercury',
+    category: 'visits',
+    frame: 'body:mercury',
+    focus: 'mercury',
+    dir: [0, -0.8, 0.45],
+    dist: 0.0001,
+    trailDays: 10,
+  },
+  visitVenus: {
+    label: 'Visit Venus',
+    category: 'visits',
+    frame: 'body:venus',
+    focus: 'venus',
+    dir: [0, -0.8, 0.45],
+    dist: 0.00025,
+    trailDays: 20,
+  },
+  visitEarth: {
     label: 'Visit Earth',
-    category: 'moons',
+    category: 'visits',
     frame: 'body:earth',
     focus: 'earth',
-    dir: [0, -0.8, 0.5],
-    dist: 0.0004,
-    trailDays: 365.25,
+    dir: [0, -0.8, 0.45],
+    dist: 0.00025,
+    trailDays: 28,
   },
-  mars: {
+  visitMars: {
     label: 'Visit Mars',
-    category: 'moons',
+    category: 'visits',
     frame: 'body:mars',
     focus: 'mars',
-    dir: [0, -0.8, 0.5],
-    dist: 0.00025,
-    trailDays: 686.98,
+    dir: [0, -0.8, 0.45],
+    dist: 0.00015,
+    trailDays: 2,
   },
-  jupiter: {
+  visitJupiter: {
     label: 'Visit Jupiter',
-    category: 'moons',
+    category: 'visits',
     frame: 'body:jupiter',
     focus: 'jupiter',
-    dir: [0, -0.8, 0.5],
-    dist: 0.0035,
-    trailDays: 4332.59,
+    dir: [0, -0.8, 0.45],
+    dist: 0.003,
+    trailDays: 16,
   },
-  saturn: {
+  visitSaturn: {
     label: 'Visit Saturn',
-    category: 'moons',
+    category: 'visits',
     frame: 'body:saturn',
     focus: 'saturn',
     dir: [0, -0.7, 0.6],
-    dist: 0.0055,
-    trailDays: 10759.22,
+    dist: 0.0035,
+    trailDays: 20,
+  },
+  visitUranus: {
+    label: 'Visit Uranus',
+    category: 'visits',
+    frame: 'body:uranus',
+    focus: 'uranus',
+    dir: [0, -0.8, 0.5],
+    dist: 0.0012,
+    trailDays: 15,
+  },
+  visitNeptune: {
+    label: 'Visit Neptune',
+    category: 'visits',
+    frame: 'body:neptune',
+    focus: 'neptune',
+    dir: [0, -0.8, 0.5],
+    dist: 0.0012,
+    trailDays: 10,
+  },
+  visitPluto: {
+    label: 'Visit Pluto',
+    category: 'visits',
+    frame: 'body:pluto',
+    focus: 'pluto',
+    dir: [0, -0.8, 0.5],
+    dist: 0.00006,
+    trailDays: 6.4,
   },
 };

@@ -179,8 +179,12 @@ export function createPanel(root: HTMLElement, store: AppStore, ctx: PanelContex
             <div class="row" id="presets-solar"></div>
 
             <!-- Moons Presets -->
-            <div style="font-size: 10px; color: #6ee7b7; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; margin-top: 2px;">🌙 Planets & Moons (Detail)</div>
+            <div style="font-size: 10px; color: #6ee7b7; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; margin-top: 2px;">🌙 Planetary Moon Systems</div>
             <div class="row" id="presets-moons"></div>
+
+            <!-- Close-Up Visits -->
+            <div style="font-size: 10px; color: #f472b6; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; margin-top: 2px;">🔭 Close-up Planet Visits</div>
+            <div class="row" id="presets-visits"></div>
           </div>
         </div>
 
@@ -303,6 +307,7 @@ export function createPanel(root: HTMLElement, store: AppStore, ctx: PanelContex
   const galPresets = ctx.presets.filter((p) => p.category === 'galaxy');
   const solPresets = ctx.presets.filter((p) => p.category === 'solar');
   const moonPresets = ctx.presets.filter((p) => p.category === 'moons');
+  const visitPresets = ctx.presets.filter((p) => p.category === 'visits');
 
   const renderPresetButtons = (el: HTMLElement | null, list: Option[]) => {
     if (!el) return;
@@ -314,6 +319,7 @@ export function createPanel(root: HTMLElement, store: AppStore, ctx: PanelContex
   renderPresetButtons(q<HTMLElement>('#presets-galaxy'), galPresets);
   renderPresetButtons(q<HTMLElement>('#presets-solar'), solPresets);
   renderPresetButtons(q<HTMLElement>('#presets-moons'), moonPresets);
+  renderPresetButtons(q<HTMLElement>('#presets-visits'), visitPresets);
 
   dateIn.value = new Date().toISOString().slice(0, 10);
 
