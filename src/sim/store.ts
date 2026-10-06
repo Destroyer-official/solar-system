@@ -1,3 +1,5 @@
+export type ScaleMode = 'true' | 'pixels' | 'exaggerated';
+
 export interface AppState {
   playing: boolean;
   reversed: boolean;
@@ -7,6 +9,9 @@ export interface AppState {
   frame: string; // ReferenceFrame id
   focus: string; // 'barycenter' or a body id: what the camera follows
   trailDays: number; // how much history to draw
+  scaleMode: ScaleMode;
+  scaleExaggeration: number; // 1 to 500
+  selected: string | null;
 }
 
 export function createStore<T extends object>(initial: T) {

@@ -1,6 +1,7 @@
 import { AU_KM } from '@/data/constants';
 import type { BodyRow } from '@/sim/readout';
-import type { AppStore } from '@/sim/store';
+import type { AppStore, ScaleMode } from '@/sim/store';
+import type { ComputedFacts } from '@/sim/facts';
 
 export interface Option {
   id: string;
@@ -30,6 +31,7 @@ export interface PanelData {
   angMomDrift: number;
   rows: BodyRow[];
   busy: boolean;
+  selectedFacts?: ComputedFacts | null;
 }
 
 const fill = (sel: HTMLSelectElement, opts: Option[]) =>
@@ -47,6 +49,17 @@ export function createPanel(root: HTMLElement, store: AppStore, ctx: PanelContex
       <div class="row" id="presets"></div>
       <label>Frame <select id="frame"></select></label>
       <label>Camera follows <select id="focus"></select></label>
+      <label>Scale mode
+        <select id="scaleMode">
+          <option value="pixels" selected>Minimum Pixel Radius</option>
+          <option value="true">True Physical Scale</option>
+          <option value="exaggerated">Exaggerated Scale</option>
+        </select>
+      </label>
+      <label id="exagRow" style="display:none;">Exaggeration
+        <input id="scaleExag" type="range" min="1" max="300" step="1" value="20">
+        <span id="exagVal">20x</span>
+      </label>
       <label>Integrator
         <select id="integrator">
           <option value="yoshida4" selected>Yoshida 4th Order</option>
@@ -65,6 +78,7 @@ export function createPanel(root: HTMLElement, store: AppStore, ctx: PanelContex
         </select>
       </label>
       <label><input id="trails" type="checkbox" checked> Trails</label>
+      <div id="factsBox" class="facts-box" style="display:none;"></div>
       <pre id="readout"></pre>
     </div>`;
 
@@ -75,6 +89,11 @@ export function createPanel(root: HTMLElement, store: AppStore, ctx: PanelContex
     speedLabel = q<HTMLSpanElement>('#speedLabel');
   const frameSel = q<HTMLSelectElement>('#frame'),
     focusSel = q<HTMLSelectElement>('#focus');
+  const scaleModeSel = q<HTMLSelectElement>('#scaleMode');
+  const scaleExagIn = q<HTMLInputElement>('#scaleExag');
+  const exagRow = q<HTMLElement>('#exagRow');
+  const exagVal = q<HTMLElement>('#exagVal');
+  const factsBox = q<HTMLDivElement>('#factsBox');
   const trailSel = q<HTMLSelectElement>('#trailDays'),
     dateIn = q<HTMLInputElement>('#date');
   const out = q<HTMLPreElement>('#readout');
@@ -95,6 +114,10 @@ export function createPanel(root: HTMLElement, store: AppStore, ctx: PanelContex
     frameSel.value = s.frame;
     focusSel.value = s.focus;
     trailSel.value = String(s.trailDays);
+    scaleModeSel.value = s.scaleMode;
+    exagRow.style.display = s.scaleMode === 'exaggerated' ? 'block' : 'none';
+    scaleExagIn.value = String(s.scaleExaggeration);
+    exagVal.textContent = `${s.scaleExaggeration}x`;
   };
 
   play.onclick = () => store.set('playing', !store.get().playing);
@@ -107,6 +130,11 @@ export function createPanel(root: HTMLElement, store: AppStore, ctx: PanelContex
   speed.oninput = () => store.set('speed', 10 ** Number(speed.value));
   frameSel.onchange = () => store.set('frame', frameSel.value);
   focusSel.onchange = () => store.set('focus', focusSel.value);
+  scaleModeSel.onchange = () => store.set('scaleMode', scaleModeSel.value as ScaleMode);
+  scaleExagIn.oninput = () => {
+    store.set('scaleExaggeration', Number(scaleExagIn.value));
+    exagVal.textContent = `${scaleExagIn.value}x`;
+  };
   trailSel.onchange = () => store.set('trailDays', Number(trailSel.value));
   q<HTMLInputElement>('#trails').onchange = (e) =>
     store.set('trails', (e.target as HTMLInputElement).checked);
@@ -147,6 +175,36 @@ export function createPanel(root: HTMLElement, store: AppStore, ctx: PanelContex
         ),
         d.busy ? '\nComputing jump...' : '',
       ].join('\n');
+
+      if (d.selectedFacts) {
+        const sf = d.selectedFacts;
+        factsBox.style.display = 'block';
+        factsBox.innerHTML = `
+          <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid rgba(255,255,255,0.2);padding-bottom:4px;">
+            <strong style="font-size:1.1em;color:#ffd700;">${sf.name}</strong>
+            <button id="closeFacts" style="padding:1px 6px;font-size:0.8em;">✕</button>
+          </div>
+          <div style="font-size:0.85em;line-height:1.4;margin-top:6px;">
+            <div><strong>Dist to Sun:</strong> ${sf.distSunAu.toFixed(3)} AU (${sf.lightMinutes.toFixed(1)} light-min)</div>
+            <div><strong>Orbital Speed:</strong> ${sf.speedKms.toFixed(2)} km/s</div>
+            <div><strong>Semi-major axis:</strong> ${sf.elements.a.toFixed(3)} AU</div>
+            <div><strong>Eccentricity:</strong> ${sf.elements.e.toFixed(4)}</div>
+            <div><strong>Period:</strong> ${(sf.elements.period / 365.25).toFixed(2)} yr (${sf.elements.period.toFixed(1)} d)</div>
+            <div><strong>Axial Tilt:</strong> ${sf.axialTiltDeg.toFixed(2)}°</div>
+            <div><strong>Sidereal Day:</strong> ${sf.siderealDayDays.toFixed(2)} d</div>
+            <div><strong>Subsolar Point:</strong> ${sf.subsolarLatDeg.toFixed(1)}° lat, ${sf.subsolarLonDeg.toFixed(1)}° lon</div>
+            <div style="margin-top:4px;border-top:1px dashed rgba(255,255,255,0.15);padding-top:4px;">
+              ${Object.entries(sf.facts)
+                .map(([k, v]) => `<div><strong>${k}:</strong> ${v}</div>`)
+                .join('')}
+            </div>
+          </div>
+        `;
+        const closeBtn = q<HTMLButtonElement>('#closeFacts');
+        if (closeBtn) closeBtn.onclick = () => store.set('selected', null);
+      } else {
+        factsBox.style.display = 'none';
+      }
     },
   };
 }

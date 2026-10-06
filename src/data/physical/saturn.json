@@ -1,0 +1,25 @@
+{
+  "rotation": {
+    "poleRaDeg": 40.589,
+    "poleRaRateDegPerCy": -0.036,
+    "poleDecDeg": 83.537,
+    "poleDecRateDegPerCy": -0.004,
+    "w0Deg": 38.9,
+    "wRateDegPerDay": 810.7939024
+  },
+  "flattening": 0.09796,
+  "j2": 1.6298e-2,
+  "texture": "/textures/saturn.jpg",
+  "ring": {
+    "innerKm": 74500,
+    "outerKm": 140220,
+    "texture": "/textures/saturn_ring.png"
+  },
+  "facts": {
+    "Mass": "5.683 × 10²⁶ kg",
+    "Equatorial Radius": "60,268 km",
+    "Flattening": "0.09796",
+    "Sidereal Rotation": "10h 33m 38s",
+    "Rings Extent": "74,500 to 140,220 km"
+  }
+}

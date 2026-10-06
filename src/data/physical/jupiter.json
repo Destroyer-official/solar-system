@@ -1,0 +1,20 @@
+{
+  "rotation": {
+    "poleRaDeg": 268.056595,
+    "poleRaRateDegPerCy": -0.006499,
+    "poleDecDeg": 64.495303,
+    "poleDecRateDegPerCy": 0.002413,
+    "w0Deg": 284.95,
+    "wRateDegPerDay": 870.536642
+  },
+  "flattening": 0.06487,
+  "j2": 1.4736e-2,
+  "texture": "/textures/jupiter.jpg",
+  "facts": {
+    "Mass": "1.898 × 10²⁷ kg",
+    "Equatorial Radius": "71,492 km",
+    "Flattening": "0.06487",
+    "Sidereal Rotation": "9h 55m 30s",
+    "Galilean Moons": "Io, Europa, Ganymede, Callisto"
+  }
+}

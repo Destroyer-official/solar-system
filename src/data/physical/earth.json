@@ -1,0 +1,20 @@
+{
+  "rotation": {
+    "poleRaDeg": 0.0,
+    "poleRaRateDegPerCy": -0.641,
+    "poleDecDeg": 90.0,
+    "poleDecRateDegPerCy": -0.557,
+    "w0Deg": 190.147,
+    "wRateDegPerDay": 360.9856235
+  },
+  "flattening": 0.00335,
+  "j2": 1.08263e-3,
+  "texture": "/textures/earth.jpg",
+  "facts": {
+    "Mass": "5.972 × 10²⁴ kg",
+    "Equatorial Radius": "6,378.1 km",
+    "Flattening": "1/298.257",
+    "Sidereal Rotation": "23h 56m 4.1s",
+    "Atmospheric Composition": "78% N₂, 21% O₂, 0.9% Ar"
+  }
+}

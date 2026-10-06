@@ -1,0 +1,19 @@
+{
+  "rotation": {
+    "poleRaDeg": 281.0103,
+    "poleRaRateDegPerCy": -0.0328,
+    "poleDecDeg": 61.4155,
+    "poleDecRateDegPerCy": -0.0049,
+    "w0Deg": 329.5988,
+    "wRateDegPerDay": 6.1385108
+  },
+  "flattening": 0.0,
+  "texture": "/textures/mercury.jpg",
+  "facts": {
+    "Mass": "3.301 × 10²³ kg",
+    "Equatorial Radius": "2,439.7 km",
+    "Flattening": "0.000",
+    "Sidereal Rotation": "58.646 days (3:2 spin-orbit resonance)",
+    "Orbital Period": "87.969 days"
+  }
+}

@@ -26,6 +26,8 @@ for (const [id, p] of Object.entries(PRESETS)) {
     throw new Error(`Preset "${id}": unknown focus "${p.focus}"`);
 }
 
+import { computeBodyFacts } from '@/sim/facts';
+
 const client = new SimClient(model, {
   maxDt: 0.5,
   maxSteps: 10_000,
@@ -45,8 +47,13 @@ const store = createStore<AppState>({
   frame: 'body:sun',
   focus: 'sun',
   trailDays: 4383,
+  scaleMode: 'pixels',
+  scaleExaggeration: 20,
+  selected: null,
 });
-const viewer = createViewer(document.getElementById('app')!, model, HISTORY_CAP);
+const viewer = createViewer(document.getElementById('app')!, model, HISTORY_CAP, {
+  onSelect: (id) => store.set('selected', id),
+});
 
 const focusIndex = (id: string) => (id === 'barycenter' ? -1 : model.ids.indexOf(id));
 
@@ -121,9 +128,13 @@ function tick(now: number) {
     trails: s.trails,
     trailDays: s.trailDays,
     history: client.history,
+    scaleMode: s.scaleMode,
+    scaleExaggeration: s.scaleExaggeration,
+    selected: s.selected,
   });
 
   if (frameNo++ % 6 === 0) {
+    const selectedFacts = s.selected ? computeBodyFacts(s.selected, client.display, model) : null;
     panel.update({
       dateUtc: jdToDate(model.epochJd + client.display.t).toISOString().slice(0, 19) + ' UTC',
       sunBaryAu: client.baryDist[sun]!,
@@ -132,6 +143,7 @@ function tick(now: number) {
       angMomDrift: client.angMomDrift,
       rows: relativeRows(client.display, model.names, sun),
       busy: client.busy,
+      selectedFacts,
     });
   }
   requestAnimationFrame(tick);

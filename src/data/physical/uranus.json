@@ -1,0 +1,18 @@
+{
+  "rotation": {
+    "poleRaDeg": 257.311,
+    "poleDecDeg": -15.175,
+    "w0Deg": 203.81,
+    "wRateDegPerDay": -501.1600928
+  },
+  "flattening": 0.02293,
+  "j2": 3.343e-3,
+  "texture": "/textures/uranus.jpg",
+  "facts": {
+    "Mass": "8.681 × 10²⁵ kg",
+    "Equatorial Radius": "25,559 km",
+    "Flattening": "0.02293",
+    "Sidereal Rotation": "-17h 14m 24s (retrograde)",
+    "Obliquity": "97.77° (rolls on its side)"
+  }
+}

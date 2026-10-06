@@ -1,0 +1,17 @@
+{
+  "rotation": {
+    "poleRaDeg": 272.76,
+    "poleDecDeg": 67.16,
+    "w0Deg": 160.2,
+    "wRateDegPerDay": -1.4813688
+  },
+  "flattening": 0.0,
+  "texture": "/textures/venus.jpg",
+  "facts": {
+    "Mass": "4.867 × 10²⁴ kg",
+    "Equatorial Radius": "6,051.8 km",
+    "Flattening": "0.000",
+    "Sidereal Rotation": "-243.02 days (retrograde)",
+    "Surface Temperature": "464 °C"
+  }
+}

@@ -1,13 +1,24 @@
-import type { BodyJson } from '@/data/schema';
+import type { BodyJson, PhysicalJson } from '@/data/schema';
 import { JD_J2000, gmToInternal } from '@/data/constants';
 import type { BodyDef, SystemState, Vec3 } from '@/physics/types';
 import { perihelionState } from '@/physics/orbit';
 import { createState, recenterToBarycenter } from '@/physics/system';
 
-const files = import.meta.glob<BodyJson>('/src/data/bodies/*.json', {
+const bodyFiles = import.meta.glob<BodyJson>('/src/data/bodies/*.json', {
   eager: true,
   import: 'default',
 });
+
+const physicalFiles = import.meta.glob<PhysicalJson>('/src/data/physical/*.json', {
+  eager: true,
+  import: 'default',
+});
+
+const physicalById = new Map<string, PhysicalJson>();
+for (const [path, data] of Object.entries(physicalFiles)) {
+  const match = path.match(/\/([^/]+)\.json$/);
+  if (match) physicalById.set(match[1]!, data);
+}
 
 export interface SystemModel {
   ids: string[];
@@ -16,6 +27,8 @@ export interface SystemModel {
   colors: string[];
   epochJd: number; // JD (TDB) at which state.t = 0
   state: SystemState; // internal units, barycentric
+  physical: PhysicalJson[];
+  physicalMap: Record<string, PhysicalJson>;
 }
 
 const add = (a: Vec3, b: Vec3): Vec3 => [a[0]! + b[0]!, a[1]! + b[1]!, a[2]! + b[2]!];
@@ -70,7 +83,7 @@ export function buildDefs(list: readonly BodyJson[]): BodyDef[] {
   return list.map((b) => build(b, [])).sort((a, b) => b.gm - a.gm); // heaviest (Sun) first
 }
 
-export function loadSystem(list: readonly BodyJson[] = Object.values(files)): SystemModel {
+export function loadSystem(list: readonly BodyJson[] = Object.values(bodyFiles)): SystemModel {
   const epochs = new Set<number>();
   for (const b of list) if (b.initial.type === 'vectors') epochs.add(b.initial.epochJd);
   if (epochs.size > 1) throw new Error(`Bodies have different epochs: ${[...epochs].join(', ')}`);
@@ -89,5 +102,7 @@ export function loadSystem(list: readonly BodyJson[] = Object.values(files)): Sy
     colors: defs.map((d) => meta.get(d.id)!.color),
     epochJd: epochs.size ? [...epochs][0]! : JD_J2000,
     state,
+    physical: defs.map((d) => physicalById.get(d.id) ?? {}),
+    physicalMap: Object.fromEntries(physicalById),
   };
 }

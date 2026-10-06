@@ -1,0 +1,20 @@
+{
+  "rotation": {
+    "poleRaDeg": 317.269202,
+    "poleRaRateDegPerCy": -0.10927547,
+    "poleDecDeg": 54.432516,
+    "poleDecRateDegPerCy": -0.05827105,
+    "w0Deg": 176.049863,
+    "wRateDegPerDay": 350.891982443
+  },
+  "flattening": 0.00589,
+  "j2": 1.96e-3,
+  "texture": "/textures/mars.jpg",
+  "facts": {
+    "Mass": "6.417 × 10²³ kg",
+    "Equatorial Radius": "3,396.2 km",
+    "Flattening": "0.00589",
+    "Sidereal Rotation": "24h 37m 22.7s",
+    "Moons": "Phobos, Deimos"
+  }
+}

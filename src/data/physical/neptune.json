@@ -1,0 +1,18 @@
+{
+  "rotation": {
+    "poleRaDeg": 299.36,
+    "poleDecDeg": 43.46,
+    "w0Deg": 249.978,
+    "wRateDegPerDay": 541.1397757
+  },
+  "flattening": 0.01708,
+  "j2": 3.411e-3,
+  "texture": "/textures/neptune.jpg",
+  "facts": {
+    "Mass": "1.024 × 10²⁶ kg",
+    "Equatorial Radius": "24,764 km",
+    "Flattening": "0.01708",
+    "Sidereal Rotation": "16h 6m 36s",
+    "Discovery": "1846 by Le Verrier / Galle"
+  }
+}
