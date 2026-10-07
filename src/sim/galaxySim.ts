@@ -31,8 +31,8 @@ export class GalaxySim {
     this.lz0 = this.pot.getLz(this.state);
   }
 
-  setLsrSpeed(lsrKms: number): void {
-    this.pot = new GalacticPotential(lsrKms);
+  setLsrSpeed(lsrKms: number, r0Kpc?: number): void {
+    this.pot = new GalacticPotential(lsrKms, r0Kpc);
     this.reset();
     this.e0 = this.pot.getEnergy(this.state);
     this.lz0 = this.pot.getLz(this.state);

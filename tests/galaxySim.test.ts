@@ -51,4 +51,31 @@ describe('GalaxySim (Galaxy Mode Simulation)', () => {
     expect(sim.getState().tMyr).toBe(0);
     expect(sim.getState().z * 1000).toBeCloseTo(20.8, 1);
   });
+
+  it('updates dynamically to Sofue 2016 VERA model (238 km/s, R0 = 8.0 kpc)', () => {
+    const sim = new GalaxySim();
+    sim.setLsrSpeed(238, 8.0);
+    const s = sim.getState();
+    expect(Math.hypot(s.x, s.y)).toBeCloseTo(8.0, 2);
+    expect(s.z * 1000).toBeCloseTo(20.8, 1);
+
+    // vy = v_pec + 238 = 12.24 + 238 = 250.24 km/s
+    const speed = Math.hypot(s.vx, s.vy, s.vz);
+    expect(speed).toBeGreaterThan(248);
+    expect(speed).toBeLessThan(253);
+
+    const readoutAtStart = sim.computeReadout();
+    expect(readoutAtStart.speedKms).toBeGreaterThan(248);
+    expect(readoutAtStart.speedKms).toBeLessThan(253);
+
+    // Integrates accurately over 250 Myr
+    const e0 = sim.getEnergy();
+    sim.step(250);
+    const e1 = sim.getEnergy();
+    const drift = Math.abs(e1 - e0) / Math.abs(e0);
+    expect(drift).toBeLessThan(1e-6);
+
+    const readoutAfter = sim.computeReadout();
+    expect(readoutAfter.speedKms).toBeGreaterThan(220);
+  });
 });

@@ -148,7 +148,11 @@ export function createPanel(root: HTMLElement, store: AppStore, ctx: PanelContex
         </div>
         <div class="reality-item">
           <span>Sun Galactic Orbit:</span>
-          <span class="reality-tag tag-true">Curved 3D (230 km/s, 75 Myr z)</span>
+          <span id="realGalOrbitTag" class="reality-tag tag-true">Curved 3D (238 km/s, Sofue 2016)</span>
+        </div>
+        <div class="reality-item">
+          <span>Galactic Potential:</span>
+          <span id="realGalModelTag" class="reality-tag tag-model">Sofue 2016 (Bulge+Disk+NFW)</span>
         </div>
       </div>
 
@@ -290,6 +294,8 @@ export function createPanel(root: HTMLElement, store: AppStore, ctx: PanelContex
   const realityInspector = q<HTMLElement>('#realityInspector');
   const realityArrow = q<HTMLElement>('#realityArrow');
   const realPosTag = q<HTMLElement>('#realPosTag');
+  const realGalOrbitTag = q<HTMLElement>('#realGalOrbitTag');
+  const realGalModelTag = q<HTMLElement>('#realGalModelTag');
 
   const play = q<HTMLButtonElement>('#play'),
     rev = q<HTMLButtonElement>('#rev'),
@@ -375,6 +381,18 @@ export function createPanel(root: HTMLElement, store: AppStore, ctx: PanelContex
     if (showOortCloudIn) showOortCloudIn.checked = !!s.showOortCloud;
     const ratio = Math.round(1 / s.compress);
     cLabel.textContent = ratio === 1 ? '1:1' : `1:${ratio} (visual only)`;
+
+    solarGalaxyModel.value = s.galaxyModelId ?? 'iau1985';
+    const activeGal = ctx.galaxyModels.find((m) => m.id === (s.galaxyModelId ?? 'iau1985'));
+    if (realGalOrbitTag) {
+      realGalOrbitTag.textContent = `Curved 3D (${activeGal?.lsrKms ?? 220} km/s)`;
+    }
+    if (realGalModelTag) {
+      realGalModelTag.textContent =
+        activeGal?.id === 'sofue2016'
+          ? 'Sofue 2016 (4-Comp + NFW Halo)'
+          : `${activeGal?.label.split('(')[0]?.trim() ?? 'IAU'} Standard`;
+    }
   };
 
   // Dynamics mode actions
@@ -460,8 +478,10 @@ export function createPanel(root: HTMLElement, store: AppStore, ctx: PanelContex
       dateIn.value = d.dateUtc ? d.dateUtc.slice(0, 10) : '';
 
       const gr = d.galaxyReadout;
+      const curGalModel = ctx.galaxyModels.find((m) => m.id === (store.get().galaxyModelId ?? 'iau1985'));
       const galHeader = gr
         ? [
+            `Galactic Model:    ${curGalModel?.label ?? 'IAU 1985'} (${curGalModel?.source.split('(')[0]?.trim()})`,
             `Galactic Position: R=${gr.rKpc.toFixed(2)} kpc | z=${gr.zPc >= 0 ? '+' : ''}${gr.zPc.toFixed(0)} pc`,
             `Galactic Velocity: ${gr.speedKms.toFixed(1)} km/s (Azimuthal ${gr.vAzimuthalKms.toFixed(1)} km/s)`,
             `Sun Midplane:      in ${gr.timeToNextMidplaneMyr.toFixed(1)} Myr (${gr.vertPhase.toUpperCase()})`,

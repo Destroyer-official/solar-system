@@ -172,8 +172,10 @@ const panel = createPanel(document.getElementById('panel')!, store, {
   onGalaxyCamera: (cam) =>
     viewer.setGalaxyView(cam, frameById.get(store.get().frame), galaxySim.getState(), store.get().galaxyZExag),
   onGalaxyModelChange: (modelId) => {
-    const lsr = getLsrKms(modelId);
-    galaxySim.setLsrSpeed(lsr);
+    const galModel = GALAXY_MODELS.find((m) => m.id === modelId);
+    const lsr = galModel?.lsrKms ?? 220;
+    const r0 = galModel?.r0Kpc ?? 8.2;
+    galaxySim.setLsrSpeed(lsr, r0);
     viewer.setGalaxyOrbitPath(galaxySim.generateOrbitPath(500, 0.5));
     frames = buildFrames(model.ids, model.names, lsr);
     frameById = new Map(frames.map((f) => [f.id, f]));

@@ -14,19 +14,48 @@ export interface GalacticOrbitState {
 }
 
 export class GalacticPotential {
-  readonly mBulge = 1e10; // M_sun
-  readonly aBulge = 0.0; // kpc
-  readonly bBulge = 0.3; // kpc
+  readonly mBulge: number; // M_sun
+  readonly aBulge: number; // kpc
+  readonly bBulge: number; // kpc
 
-  readonly mDisk = 7e10; // M_sun
-  readonly aDisk = 3.0; // kpc
-  readonly bDisk = 0.28; // kpc
+  readonly mDisk: number; // M_sun
+  readonly aDisk: number; // kpc
+  readonly bDisk: number; // kpc
 
-  readonly rcHalo = 12.0; // kpc
-  readonly qHalo = 1.0;
+  readonly rcHalo: number; // kpc
+  readonly qHalo: number;
   readonly v0Halo2: number;
+  readonly vTargetKms: number;
+  readonly r0Kpc: number;
 
-  constructor(vTargetKms = LSR_SPEED_KMS, r0Kpc = 8.2) {
+  constructor(
+    vTargetKms = LSR_SPEED_KMS,
+    r0Kpc = 8.2,
+    opts?: {
+      mBulge?: number;
+      aBulge?: number;
+      bBulge?: number;
+      mDisk?: number;
+      aDisk?: number;
+      bDisk?: number;
+      rcHalo?: number;
+      qHalo?: number;
+    },
+  ) {
+    this.vTargetKms = vTargetKms;
+    this.r0Kpc = r0Kpc;
+
+    this.mBulge = opts?.mBulge ?? 1e10;
+    this.aBulge = opts?.aBulge ?? 0.0;
+    this.bBulge = opts?.bBulge ?? 0.3;
+
+    this.mDisk = opts?.mDisk ?? 7e10;
+    this.aDisk = opts?.aDisk ?? 3.0;
+    this.bDisk = opts?.bDisk ?? 0.28;
+
+    this.rcHalo = opts?.rcHalo ?? 12.0;
+    this.qHalo = opts?.qHalo ?? 1.0;
+
     const vcBulge2 = this.circSpeed2MN(this.mBulge, this.aBulge, this.bBulge, r0Kpc);
     const vcDisk2 = this.circSpeed2MN(this.mDisk, this.aDisk, this.bDisk, r0Kpc);
     const vcHalo2 = Math.max(0, vTargetKms * vTargetKms - vcBulge2 - vcDisk2);
@@ -127,8 +156,8 @@ export class GalacticPotential {
     return s.x * s.vy - s.y * s.vx;
   }
 
-  /** Initial Sun state at R0 = 8.2 kpc */
-  getInitialSunState(r0 = 8.2, z0 = 0.0208): GalacticOrbitState {
+  /** Initial Sun state at r0 kpc and z0 = +20.8 pc */
+  getInitialSunState(r0 = this.r0Kpc, z0 = 0.0208): GalacticOrbitState {
     const [u, v, w] = SOLAR_PECULIAR_KMS;
     return {
       tMyr: 0,
@@ -136,7 +165,7 @@ export class GalacticPotential {
       y: 0,
       z: z0,
       vx: u,
-      vy: v + LSR_SPEED_KMS,
+      vy: v + this.vTargetKms,
       vz: w,
     };
   }
