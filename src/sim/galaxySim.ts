@@ -19,14 +19,21 @@ export interface GalaxyReadout {
 }
 
 export class GalaxySim {
-  readonly pot: GalacticPotential;
+  pot: GalacticPotential;
   private state: GalacticOrbitState;
-  private readonly e0: number;
-  private readonly lz0: number;
+  private e0: number;
+  private lz0: number;
 
   constructor(pot?: GalacticPotential) {
     this.pot = pot ?? new GalacticPotential();
     this.state = this.pot.getInitialSunState();
+    this.e0 = this.pot.getEnergy(this.state);
+    this.lz0 = this.pot.getLz(this.state);
+  }
+
+  setLsrSpeed(lsrKms: number): void {
+    this.pot = new GalacticPotential(lsrKms);
+    this.reset();
     this.e0 = this.pot.getEnergy(this.state);
     this.lz0 = this.pot.getLz(this.state);
   }

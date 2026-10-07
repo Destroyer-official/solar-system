@@ -33,6 +33,12 @@ export const GALAXY_MODELS: readonly GalaxyModel[] = [
     source: 'IAU 1985 standard recommendation',
   },
   {
+    id: 'sofue2016',
+    label: 'Sofue 2016 / VERA (238 km/s)',
+    lsrKms: 238,
+    source: 'Yoshiaki Sofue 2016 (Caltech/IPAC NED Level 5 Review, VERA trigonometric astrometry)',
+  },
+  {
     id: 'reid2019',
     label: 'Reid et al. 2019 (~236 km/s)',
     lsrKms: 236,
