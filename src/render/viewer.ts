@@ -80,8 +80,8 @@ export function createViewer(
   }
   window.addEventListener('resize', onResize);
 
-  // 1. Starfield background
-  scene.add(createStarfield(9000, 30000));
+  // 1. Photorealistic celestial sphere starfield & Milky Way band
+  scene.add(createStarfield(45000));
 
   // 2. Lighting: sun pointlight + small ambient (0.02) for realistic dark night sides
   const ambientLight = new THREE.AmbientLight(0xffffff, 0.02);
@@ -151,9 +151,18 @@ export function createViewer(
   const oortVisual = new OortCloudVisual();
   scene.add(oortVisual.group);
 
-  function setView(dir: readonly [number, number, number], distanceAu: number): void {
-    camera.position.set(dir[0], dir[1], dir[2]).setLength(distanceAu);
-    controls.target.set(0, 0, 0);
+  function setView(dir: readonly [number, number, number], distanceAu: number, target?: THREE.Vector3): void {
+    if (target) {
+      controls.target.copy(target);
+      camera.position.set(
+        target.x + dir[0] * distanceAu,
+        target.y + dir[1] * distanceAu,
+        target.z + dir[2] * distanceAu,
+      );
+    } else {
+      camera.position.set(dir[0], dir[1], dir[2]).setLength(distanceAu);
+      controls.target.set(0, 0, 0);
+    }
     controls.update();
   }
   setView([0, -0.8, 0.6], 35);
@@ -237,7 +246,13 @@ export function createViewer(
 
       // Update 3D billboard label
       let labelVisible = v.showLabels !== false;
-      if (vis.isMoon && vis.parentId && labelVisible) {
+      const camDistToSun = visuals[0] ? camera.position.distanceTo(visuals[0].group.position) : camera.position.length();
+      if (v.presetCategory === 'galaxy' || camDistToSun > 400) {
+        // At galactic scale, only show the Sun / Solar System label; hide individual planets and moons
+        if (i !== 0) {
+          labelVisible = false;
+        }
+      } else if (vis.isMoon && vis.parentId && labelVisible) {
         const parentVis = visualById.get(vis.parentId);
         if (parentVis) {
           const camDistToParent = camera.position.distanceTo(parentVis.group.position);
@@ -268,14 +283,10 @@ export function createViewer(
       oortVisual.setVisible(false);
     }
 
-    // Milky Way Galaxy in unified cosmos
-    // The 3D spiral arms and 500 Myr galactic orbit are displayed when viewing at galaxy scale
-    // or when the camera is zoomed out (> 800 AU). At solar/moon scale, the starry celestial sphere
-    // provides the realistic backdrop without an unnatural miniature galaxy disk overlapping planets.
+    // Milky Way Galaxy in unified cosmos: active and visible across cosmological scales
     const camDist = camera.position.length();
-    const isGalaxyScale = v.presetCategory === 'galaxy' || camDist > 800;
 
-    if (v.showMilkyWay !== false && isGalaxyScale) {
+    if (v.showMilkyWay !== false) {
       galaxyVisual.setVisible(true);
       galaxyVisual.setUnifiedMode(camDist, v.showGalacticHalo !== false);
       if (v.galaxyZExag !== undefined) {

@@ -32,7 +32,7 @@ let frameById = new Map(frames.map((f) => [f.id, f]));
 // Filter presets against the loaded system
 const validPresets: Record<string, (typeof PRESETS)[string]> = {};
 for (const [id, p] of Object.entries(PRESETS)) {
-  if (frameById.has(p.frame) && (p.focus === 'barycenter' || model.ids.includes(p.focus))) {
+  if (frameById.has(p.frame) && (p.focus === 'barycenter' || p.focus === 'sgra' || model.ids.includes(p.focus))) {
     validPresets[id] = p;
   }
 }
@@ -84,16 +84,25 @@ const viewer = createViewer(document.getElementById('app')!, model, HISTORY_CAP,
 // Precompute full 500 Myr galactic orbit path and supply to viewer
 viewer.setGalaxyOrbitPath(galaxySim.generateOrbitPath(500, 0.5));
 
-const focusIndex = (id: string) => (id === 'barycenter' ? -1 : model.ids.indexOf(id));
+const focusIndex = (id: string) => (id === 'barycenter' || id === 'sgra' ? -1 : model.ids.indexOf(id));
 
 function viewPreset(id: string): void {
   const p = validPresets[id] ?? PRESETS[id]!;
-  viewer.setView(p.dir, p.dist);
+  if (id === 'milkyWay') {
+    viewer.setGalaxyView('overview', galaxySim.getState(), store.get().galaxyZExag);
+  } else if (id === 'sgra') {
+    viewer.setGalaxyView('sgra', galaxySim.getState(), store.get().galaxyZExag);
+  } else {
+    viewer.setView(p.dir, p.dist);
+  }
   store.set('trailDays', p.trailDays);
 }
 
+let isApplyingPreset = false;
+
 function applyPreset(id: string): void {
   const p = validPresets[id] ?? PRESETS[id]!;
+  isApplyingPreset = true;
   store.set('preset', id);
   store.set('frame', p.frame);
   store.set('focus', p.focus);
@@ -102,8 +111,17 @@ function applyPreset(id: string): void {
   }
   if (id === 'sunUnified' || id === 'wobble') {
     store.set('selected', 'sun');
+    store.set('scaleMode', 'true');
+  } else if (store.get().scaleMode === 'true') {
+    store.set('scaleMode', 'pixels');
+  }
+  if (id === 'cosmic') {
+    store.set('compress', 0.05);
+  } else {
+    store.set('compress', 1);
   }
   viewPreset(id);
+  isApplyingPreset = false;
 }
 
 function applyFrameDefaults(id: string): void {
@@ -130,6 +148,7 @@ const panel = createPanel(document.getElementById('panel')!, store, {
   focuses: [
     { id: 'barycenter', label: 'Solar System Barycenter' },
     ...model.ids.map((id, i) => ({ id, label: model.names[i]! })),
+    { id: 'sgra', label: 'Sagittarius A* (Galactic Center)' },
   ],
   presets: Object.entries(validPresets).map(([id, p]) => ({
     id,
@@ -158,7 +177,7 @@ const panel = createPanel(document.getElementById('panel')!, store, {
 store.subscribe((s, changed) => {
   if (changed === 'preset') applyPreset(s.preset);
   if (changed === 'reversed') client.newDirection();
-  if (changed === 'frame') applyFrameDefaults(s.frame);
+  if (changed === 'frame' && !isApplyingPreset) applyFrameDefaults(s.frame);
   if (changed === 'focus') {
     const fIdx = focusIndex(s.focus);
     if (fIdx >= 0) {

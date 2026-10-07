@@ -171,6 +171,9 @@ export function createPanel(root: HTMLElement, store: AppStore, ctx: PanelContex
           <button id="now" title="Sync live to current real-world UTC time">Now (Live)</button>
         </div>
 
+        <!-- Selected Body Facts Card (Immediate Visibility) -->
+        <div id="factsBox" class="facts-box" style="display:none; margin-top: 4px;"></div>
+
         <!-- Categorized Cosmic Presets -->
         <div style="margin-top: 4px;">
           <div style="font-size: 11px; font-weight: 600; color: #cbd5e1; margin-bottom: 4px; display: flex; align-items: center; justify-content: space-between;">
@@ -263,9 +266,6 @@ export function createPanel(root: HTMLElement, store: AppStore, ctx: PanelContex
           <input id="compress" type="range" min="-2" max="0" step="0.05" value="0"> 
           <span id="cLabel">1:1</span>
         </label>
-
-        <!-- Selected Body Facts Card -->
-        <div id="factsBox" class="facts-box" style="display:none;"></div>
 
         <!-- Telemetry Readout -->
         <pre id="readout"></pre>

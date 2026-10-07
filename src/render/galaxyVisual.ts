@@ -496,20 +496,32 @@ export class GalaxyVisual {
     return target.copy(this.sunMarker.position);
   }
 
-  setUnifiedMode(cameraDistAu: number, showHalo = true): void {
-    const isClose = cameraDistAu < 600;
-    // When close to the Sun, hide the large icon marker so the real 3D Sun is clean
-    this.sunMarker.visible = !isClose;
-    // The 500 Myr galactic orbit path of the Sun and Sagittarius A* are always visible
-    this.orbitLine.visible = true;
-    this.sgrAMarker.visible = true;
-    this.gridGroup.visible = !isClose;
-    this.haloGroup.visible = showHalo;
+  getSgrAPosition(target: THREE.Vector3): THREE.Vector3 {
+    return target.copy(this.group.position);
+  }
 
-    const starMat = this.starsPoints.material as THREE.PointsMaterial;
-    const bulgeMat = this.bulgePoints.material as THREE.PointsMaterial;
-    starMat.size = isClose ? 1.5 : 0.14;
-    bulgeMat.size = isClose ? 2.2 : 0.20;
+  setUnifiedMode(cameraDistAu: number, showHalo = true): void {
+    const isClose = cameraDistAu < 250;
+    // When close to the Sun/Solar System (<250 AU), hide 3D local particles, yellow orbit line,
+    // and Sgr A* marker to prevent pixel blobs or lines cutting through planets.
+    // The celestial Milky Way sphere (starfield.ts) provides the glorious, photorealistic sky background.
+    this.sunMarker.visible = !isClose;
+    this.orbitLine.visible = !isClose;
+    this.sgrAMarker.visible = !isClose;
+    this.gridGroup.visible = !isClose;
+    this.haloGroup.visible = showHalo && !isClose;
+    this.starsPoints.visible = !isClose;
+    this.bulgePoints.visible = !isClose;
+
+    if (!isClose) {
+      const starMat = this.starsPoints.material as THREE.PointsMaterial;
+      const bulgeMat = this.bulgePoints.material as THREE.PointsMaterial;
+      starMat.size = 0.14;
+      bulgeMat.size = 0.22;
+      const fade = Math.min(0.95, (cameraDistAu - 250) / 400);
+      starMat.opacity = fade;
+      bulgeMat.opacity = fade;
+    }
   }
 
   setSolarMode(isSolar: boolean): void {

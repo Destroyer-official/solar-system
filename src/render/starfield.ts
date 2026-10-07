@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { GALACTIC_AXES_IN_SIM } from '@/frames/galactic';
 
 const STAR_COLORS = [
   0x9bb0ff, // O/B blue
@@ -10,49 +11,136 @@ const STAR_COLORS = [
 ];
 
 /**
- * Creates an astronomical celestial sphere starfield with realistic stellar spectral distributions.
+ * Creates an astronomical celestial sphere starfield featuring:
+ * 1. Isotropic distant background stars (spectral classes O-M).
+ * 2. Milky Way Galactic Plane Star Clouds: 45,000 crisp stars exponentially concentrated along
+ *    the Galactic Equator (b = 0) and peaked towards Sagittarius A* (l = 0), with Great Rift dark dust lanes.
+ * Tilted at 60.19° to the ecliptic plane, matching true astronomical IAU coordinates.
+ * All stars use sizeAttenuation: false for pin-sharp, photorealistic starlight without fuzzy blob artifacts.
  */
-export function createStarfield(count = 8000, radius = 50000): THREE.Points {
-  const positions = new Float32Array(count * 3);
-  const colors = new Float32Array(count * 3);
+export function createStarfield(radius = 45000): THREE.Group {
+  const group = new THREE.Group();
 
+  const [GX, GY, GZ] = GALACTIC_AXES_IN_SIM;
+
+  // Helper to convert Galactic spherical (l, b, r) to simulation ecliptic (x, y, z)
+  const galToSim = (l: number, b: number, r: number): [number, number, number] => {
+    const cb = Math.cos(b);
+    const xg = cb * Math.cos(l);
+    const yg = cb * Math.sin(l);
+    const zg = Math.sin(b);
+
+    const x = r * (xg * GX[0]! + yg * GY[0]! + zg * GZ[0]!);
+    const y = r * (xg * GX[1]! + yg * GY[1]! + zg * GZ[1]!);
+    const z = r * (xg * GX[2]! + yg * GY[2]! + zg * GZ[2]!);
+    return [x, y, z];
+  };
+
+  // 1. Isotropic Field Stars (8,000 stars across the entire sky)
+  const numField = 8000;
+  const fieldPos = new Float32Array(numField * 3);
+  const fieldCol = new Float32Array(numField * 3);
   const col = new THREE.Color();
 
-  for (let i = 0; i < count; i++) {
-    // Uniform sphere distribution
+  for (let i = 0; i < numField; i++) {
     const u = Math.random();
     const v = Math.random();
     const theta = u * 2.0 * Math.PI;
     const phi = Math.acos(2.0 * v - 1.0);
-    const r = radius * (0.9 + 0.2 * Math.random());
+    const r = radius * (0.92 + 0.16 * Math.random());
 
-    positions[3 * i] = r * Math.sin(phi) * Math.cos(theta);
-    positions[3 * i + 1] = r * Math.sin(phi) * Math.sin(theta);
-    positions[3 * i + 2] = r * Math.cos(phi);
+    fieldPos[3 * i] = r * Math.sin(phi) * Math.cos(theta);
+    fieldPos[3 * i + 1] = r * Math.sin(phi) * Math.sin(theta);
+    fieldPos[3 * i + 2] = r * Math.cos(phi);
 
-    // Random spectral class
     const hex = STAR_COLORS[Math.floor(Math.random() * STAR_COLORS.length)]!;
     col.setHex(hex);
-    // Dimmer / brighter magnitudes
-    const intensity = Math.random() < 0.05 ? 1.0 : Math.random() * 0.7 + 0.3;
-    colors[3 * i] = col.r * intensity;
-    colors[3 * i + 1] = col.g * intensity;
-    colors[3 * i + 2] = col.b * intensity;
+    const mag = Math.random() < 0.05 ? 1.0 : Math.random() * 0.55 + 0.2;
+    fieldCol[3 * i] = col.r * mag;
+    fieldCol[3 * i + 1] = col.g * mag;
+    fieldCol[3 * i + 2] = col.b * mag;
   }
 
-  const geom = new THREE.BufferGeometry();
-  geom.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-  geom.setAttribute('color', new THREE.BufferAttribute(colors, 3));
-
-  const mat = new THREE.PointsMaterial({
-    size: 2,
+  const fieldGeom = new THREE.BufferGeometry();
+  fieldGeom.setAttribute('position', new THREE.BufferAttribute(fieldPos, 3));
+  fieldGeom.setAttribute('color', new THREE.BufferAttribute(fieldCol, 3));
+  const fieldMat = new THREE.PointsMaterial({
+    size: 1.6,
     sizeAttenuation: false,
     vertexColors: true,
     transparent: true,
-    opacity: 0.9,
+    opacity: 0.85,
   });
+  const fieldPoints = new THREE.Points(fieldGeom, fieldMat);
+  fieldPoints.frustumCulled = false;
+  group.add(fieldPoints);
 
-  const points = new THREE.Points(geom, mat);
-  points.frustumCulled = false;
-  return points;
+  // 2. Milky Way Galactic Plane Star Clouds (45,000 crisp stars concentrated along b = 0)
+  const numGal = 45000;
+  const galPos = new Float32Array(numGal * 3);
+  const galCol = new Float32Array(numGal * 3);
+
+  for (let i = 0; i < numGal; i++) {
+    // Galactic latitude: exponential scale height ~ 0.10 rad (~5.7°)
+    const sign = Math.random() < 0.5 ? 1 : -1;
+    const b = sign * -Math.log(1 - Math.random() * 0.98) * 0.095;
+
+    // Galactic longitude: concentrated towards Galactic Center (Sagittarius bulge)
+    let l = 0;
+    if (Math.random() < 0.58) {
+      // Inner galaxy bulge & arms (-50° to +50°)
+      l = (Math.random() - 0.5) * (Math.PI * 0.55);
+    } else {
+      // Full circle around the galactic disc
+      l = Math.random() * 2 * Math.PI;
+    }
+    if (l < 0) l += 2 * Math.PI;
+
+    // Great Rift dust lane absorption: Cygnus to Sagittarius (l: 345° to 35°, b: -3° to +3°)
+    const lDeg = (l * 180) / Math.PI;
+    const bDeg = (b * 180) / Math.PI;
+    const isRift =
+      (lDeg > 342 || lDeg < 38) &&
+      bDeg > -2.2 &&
+      bDeg < 2.0 &&
+      Math.random() < 0.7;
+
+    const r = radius * (0.95 + 0.1 * Math.random());
+    const [x, y, z] = galToSim(l, b, r);
+
+    galPos[3 * i] = x;
+    galPos[3 * i + 1] = y;
+    galPos[3 * i + 2] = z;
+
+    // Color: warm golden towards Sgr A* bulge; silver/blue in arms
+    const distToCenter = Math.min(Math.abs(lDeg), Math.abs(360 - lDeg));
+    if (distToCenter < 35 && Math.abs(bDeg) < 5) {
+      // Bulge: warm golden / amber K/M giants
+      col.setHSL(0.11 + Math.random() * 0.05, 0.7, 0.75 + Math.random() * 0.25);
+    } else {
+      // Arm stars: white / icy cyan O/B/A stars
+      col.setHSL(0.58 + Math.random() * 0.08, 0.45, 0.8 + Math.random() * 0.2);
+    }
+
+    const intensity = isRift ? 0.05 : (Math.random() * 0.65 + 0.35);
+    galCol[3 * i] = col.r * intensity;
+    galCol[3 * i + 1] = col.g * intensity;
+    galCol[3 * i + 2] = col.b * intensity;
+  }
+
+  const galGeom = new THREE.BufferGeometry();
+  galGeom.setAttribute('position', new THREE.BufferAttribute(galPos, 3));
+  galGeom.setAttribute('color', new THREE.BufferAttribute(galCol, 3));
+  const galMat = new THREE.PointsMaterial({
+    size: 1.8,
+    sizeAttenuation: false,
+    vertexColors: true,
+    transparent: true,
+    opacity: 0.95,
+  });
+  const galPoints = new THREE.Points(galGeom, galMat);
+  galPoints.frustumCulled = false;
+  group.add(galPoints);
+
+  return group;
 }
