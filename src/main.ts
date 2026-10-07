@@ -109,8 +109,12 @@ function applyPreset(id: string): void {
   if (id === 'oort') {
     store.set('showOortCloud', true);
   }
-  if (id === 'sunUnified' || id === 'wobble') {
+  if (p.focus !== 'barycenter' && p.focus !== 'sgra') {
+    store.set('selected', p.focus);
+  } else if (id === 'sunUnified' || id === 'wobble') {
     store.set('selected', 'sun');
+  }
+  if (id === 'sunUnified' || id === 'wobble') {
     store.set('scaleMode', 'true');
   } else if (store.get().scaleMode === 'true') {
     store.set('scaleMode', 'pixels');

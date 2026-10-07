@@ -1,0 +1,20 @@
+{
+  "rotation": {
+    "poleRaDeg": 39.48,
+    "poleDecDeg": 83.43,
+    "w0Deg": 186.58,
+    "wRateDegPerDay": 22.5769768
+  },
+  "flattening": 0.0001,
+  "texture": "/textures/titan.jpg",
+  "facts": {
+    "Host Body": "Saturn",
+    "Equatorial Radius": "2,574.7 km (2nd largest moon in Solar System, larger than Mercury)",
+    "Mass": "1.345 × 10²³ kg",
+    "Dense Atmosphere": "98.4% N₂, 1.4% CH₄; surface pressure 1.45 atm (50% denser than Earth's)",
+    "Hydrocarbon Seas": "Kraken Mare (400,000 km²), Ligeia Mare, and Punga Mare of liquid methane/ethane",
+    "Hydrological Cycle": "Methane clouds, rain, rivers, river deltas, and sand dunes made of organic tholins",
+    "Huygens Landing": "ESA probe touched down on Titan's frozen pebbled surface on Jan 14, 2005",
+    "Future Mission": "NASA Dragonfly rotorcraft lander launching to explore Selk Crater"
+  }
+}

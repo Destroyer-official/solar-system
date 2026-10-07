@@ -16,6 +16,12 @@ export interface ComputedFacts {
   subsolarLatDeg: number;
   subsolarLonDeg: number;
   facts: Record<string, string>;
+  isMoon?: boolean;
+  parentId?: string;
+  parentName?: string;
+  distParentAu?: number;
+  distParentKm?: number;
+  speedRelParentKms?: number;
 }
 
 export function computeBodyFacts(
@@ -85,6 +91,12 @@ export function computeBodyFacts(
     };
   }
 
+  // Check if body is a moon with a parent planet
+  const bodyMeta = model.bodies?.find((b) => b.id === id);
+  const parentId = (bodyMeta as { parent?: string } | undefined)?.parent;
+  const parentIdx = parentId ? model.ids.indexOf(parentId) : -1;
+  const isMoon = parentIdx >= 0;
+
   // Body relative to Sun
   const rx = state.pos[3 * i]! - state.pos[3 * sun]!;
   const ry = state.pos[3 * i + 1]! - state.pos[3 * sun + 1]!;
@@ -98,11 +110,47 @@ export function computeBodyFacts(
   const lightMinutes = distSunAu * (AU_KM / 299792.458 / 60);
   const speedKms = auDayToKms(Math.hypot(vx, vy, vz));
 
-  // Osculating orbital elements
-  const mu = state.gm[sun]! + state.gm[i]!;
-  const rVec: Vec3 = [rx, ry, rz];
-  const vVec: Vec3 = [vx, vy, vz];
-  const elements = stateToElements(mu, rVec, vVec);
+  let elements: Elements;
+  let distParentAu: number | undefined;
+  let distParentKm: number | undefined;
+  let speedRelParentKms: number | undefined;
+
+  let hx: number, hy: number, hz: number;
+
+  if (isMoon) {
+    // Relative to parent planet
+    const rpx = state.pos[3 * i]! - state.pos[3 * parentIdx]!;
+    const rpy = state.pos[3 * i + 1]! - state.pos[3 * parentIdx + 1]!;
+    const rpz = state.pos[3 * i + 2]! - state.pos[3 * parentIdx + 2]!;
+
+    const vpx = state.vel[3 * i]! - state.vel[3 * parentIdx]!;
+    const vpy = state.vel[3 * i + 1]! - state.vel[3 * parentIdx + 1]!;
+    const vpz = state.vel[3 * i + 2]! - state.vel[3 * parentIdx + 2]!;
+
+    distParentAu = Math.hypot(rpx, rpy, rpz);
+    distParentKm = distParentAu * AU_KM;
+    speedRelParentKms = auDayToKms(Math.hypot(vpx, vpy, vpz));
+
+    const parentBody = model.bodies?.find((b) => b.id === parentId);
+    const muParent = parentBody?.gmIsSystem ? state.gm[parentIdx]! : state.gm[parentIdx]! + state.gm[i]!;
+    const rVecParent: Vec3 = [rpx, rpy, rpz];
+    const vVecParent: Vec3 = [vpx, vpy, vpz];
+    elements = stateToElements(muParent, rVecParent, vVecParent);
+
+    hx = rpy * vpz - rpz * vpy;
+    hy = rpz * vpx - rpx * vpz;
+    hz = rpx * vpy - rpy * vpx;
+  } else {
+    // Relative to Sun
+    const mu = state.gm[sun]! + state.gm[i]!;
+    const rVec: Vec3 = [rx, ry, rz];
+    const vVec: Vec3 = [vx, vy, vz];
+    elements = stateToElements(mu, rVec, vVec);
+
+    hx = ry * vz - rz * vy;
+    hy = rz * vx - rx * vz;
+    hz = rx * vy - ry * vx;
+  }
 
   let axialTiltDeg = 0;
   let siderealDayDays = 0;
@@ -114,20 +162,16 @@ export function computeBodyFacts(
     const pole = poleOf(M);
 
     // Orbit normal
-    const hx = ry * vz - rz * vy;
-    const hy = rz * vx - rx * vz;
-    const hz = rx * vy - ry * vx;
-    const hl = Math.hypot(hx, hy, hz);
+    const hl = Math.hypot(hx, hy, hz) || 1e-12;
     const n = [hx / hl, hy / hl, hz / hl];
 
     const spinPole = rot.wRateDegPerDay < 0 ? [-pole[0]!, -pole[1]!, -pole[2]!] : pole;
     const dot = spinPole[0]! * n[0]! + spinPole[1]! * n[1]! + spinPole[2]! * n[2]!;
     axialTiltDeg = (Math.acos(Math.max(-1, Math.min(1, dot))) * 180) / Math.PI;
 
-    siderealDayDays = 360 / rot.wRateDegPerDay;
+    siderealDayDays = 360 / Math.abs(rot.wRateDegPerDay);
 
-    // Subsolar point
-    // Vector from body to Sun is -rVec
+    // Subsolar point (vector from body to Sun is -rVec)
     const toSunX = -rx / distSunAu;
     const toSunY = -ry / distSunAu;
     const toSunZ = -rz / distSunAu;
@@ -153,5 +197,11 @@ export function computeBodyFacts(
     subsolarLatDeg,
     subsolarLonDeg,
     facts: physical?.facts ?? {},
+    isMoon,
+    parentId,
+    parentName: isMoon ? model.names[parentIdx]! : undefined,
+    distParentAu,
+    distParentKm,
+    speedRelParentKms,
   };
 }

@@ -1,0 +1,17 @@
+{
+  "rotation": {
+    "poleRaDeg": 40.59,
+    "poleDecDeg": 83.54,
+    "w0Deg": 0.0,
+    "wRateDegPerDay": 16.918
+  },
+  "flattening": 0.35,
+  "texture": "/textures/hyperion.jpg",
+  "facts": {
+    "Host Body": "Saturn",
+    "Mean Radius": "135.0 km (Dimensions: 360 × 266 × 205 km)",
+    "Orbital Period": "21.277 days (4:3 orbital resonance with Titan)",
+    "Chaotic Rotation": "Only moon known with chaotic tumbling rotation (unpredictable orientation)",
+    "Sponge Structure": "Porosity >40%; deeply pocketed sponge-like impact craters"
+  }
+}

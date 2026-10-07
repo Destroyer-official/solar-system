@@ -1,0 +1,17 @@
+{
+  "rotation": {
+    "poleRaDeg": 40.59,
+    "poleDecDeg": 83.54,
+    "w0Deg": 357.6,
+    "wRateDegPerDay": 131.5349316
+  },
+  "flattening": 0.005,
+  "texture": "/textures/dione.jpg",
+  "facts": {
+    "Host Body": "Saturn",
+    "Mean Radius": "561.4 km",
+    "Orbital Period": "2.737 days",
+    "Wispy Terrain": "Bright ice cliffs created by tectonic fracture systems",
+    "Trojan Moon": "Helene orbits in Dione's leading L4 Lagrange point"
+  }
+}

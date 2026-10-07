@@ -1,0 +1,18 @@
+{
+  "rotation": {
+    "poleRaDeg": 40.59,
+    "poleDecDeg": 83.54,
+    "w0Deg": 8.96,
+    "wRateDegPerDay": 190.6979085
+  },
+  "flattening": 0.02,
+  "texture": "/textures/tethys.jpg",
+  "facts": {
+    "Host Body": "Saturn",
+    "Mean Radius": "531.1 km",
+    "Orbital Period": "1.888 days",
+    "Ithaca Chasma": "Enormous graben canyon 2,000 km long, 100 km wide, 3-5 km deep",
+    "Odysseus Crater": "Giant 445 km crater covering 2/5 of Tethys's surface",
+    "Trojan Moons": "Shares orbit with Telesto (L4) and Calypso (L5)"
+  }
+}

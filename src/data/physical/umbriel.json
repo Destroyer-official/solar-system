@@ -1,0 +1,18 @@
+{
+  "rotation": {
+    "poleRaDeg": 257.31,
+    "poleDecDeg": -15.18,
+    "w0Deg": 10.2,
+    "wRateDegPerDay": -86.8688923
+  },
+  "flattening": 0.005,
+  "texture": "/textures/umbriel.jpg",
+  "facts": {
+    "Host Body": "Uranus",
+    "Mean Radius": "584.7 km",
+    "Mass": "1.28 × 10²¹ kg",
+    "Orbital Period": "4.144 days (Synchronously Tidally Locked 1:1)",
+    "Albedo": "Darkest of Uranus's major moons; ancient uniform cratered surface",
+    "Wunda Crater": "Bright ring deposit of carbon dioxide/water ice on crater floor"
+  }
+}

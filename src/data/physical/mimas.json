@@ -1,0 +1,19 @@
+{
+  "rotation": {
+    "poleRaDeg": 40.59,
+    "poleDecDeg": 83.54,
+    "w0Deg": 336.5,
+    "wRateDegPerDay": 381.994555
+  },
+  "flattening": 0.08,
+  "texture": "/textures/mimas.jpg",
+  "facts": {
+    "Host Body": "Saturn",
+    "Mean Radius": "198.2 km",
+    "Mass": "3.75 × 10¹⁹ kg",
+    "Orbital Period": "0.942 days (22h 37m)",
+    "Cassini Division": "2:1 orbital resonance clears the 4,800 km gap in Saturn's rings",
+    "Herschel Crater": "139 km wide crater (1/3 of Mimas's diameter) creating 'Death Star' look",
+    "Subsurface Ocean": "2024 Cassini librations reveal a young hidden ocean 20-30 km deep"
+  }
+}

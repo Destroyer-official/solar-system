@@ -1,0 +1,20 @@
+{
+  "rotation": {
+    "poleRaDeg": 269.9949,
+    "poleDecDeg": 66.5392,
+    "w0Deg": 38.3213,
+    "wRateDegPerDay": 13.17635815
+  },
+  "flattening": 0.0012,
+  "texture": "/textures/moon.jpg",
+  "facts": {
+    "Host Body": "Earth (Barycentric Orbit)",
+    "Equatorial Radius": "1,737.4 km (0.2724 Earths)",
+    "Mass": "7.342 × 10²² kg (0.0123 Earths)",
+    "Surface Gravity": "1.62 m/s² (0.166 g)",
+    "Orbital Period": "27.322 days (Synchronously Tidally Locked 1:1)",
+    "Semi-Major Axis": "384,400 km (0.00257 AU)",
+    "Surface Features": "Mare Tranquillitatis, Oceanus Procellarum, Tycho Crater",
+    "Exploration": "Apollo 11 (1969), Artemis program"
+  }
+}

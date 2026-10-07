@@ -1,0 +1,19 @@
+{
+  "rotation": {
+    "poleRaDeg": 317.68,
+    "poleDecDeg": 52.90,
+    "w0Deg": 35.06,
+    "wRateDegPerDay": 1128.844585
+  },
+  "flattening": 0.31,
+  "texture": "/textures/phobos.jpg",
+  "facts": {
+    "Host Body": "Mars",
+    "Mean Radius": "11.27 km (Triaxial: 26 × 22.8 × 18.2 km)",
+    "Mass": "1.066 × 10¹⁶ kg",
+    "Orbital Period": "7h 39m 14s (Sub-synchronous orbit)",
+    "Orbital Dynamics": "Orbits faster than Mars rotates; rises in west, sets in east twice daily",
+    "Tidal Decay": "Descending 1.8 m/century; will crash or disrupt into a ring in ~50 Myr",
+    "Prominent Feature": "Stickney Crater (9 km diameter, ~half of Phobos's width)"
+  }
+}

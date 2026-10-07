@@ -1,0 +1,19 @@
+{
+  "rotation": {
+    "poleRaDeg": 40.59,
+    "poleDecDeg": 83.54,
+    "w0Deg": 6.32,
+    "wRateDegPerDay": 262.7318996
+  },
+  "flattening": 0.005,
+  "texture": "/textures/enceladus.jpg",
+  "facts": {
+    "Host Body": "Saturn",
+    "Mean Radius": "252.1 km",
+    "Mass": "1.08 × 10²⁰ kg",
+    "Orbital Period": "1.370 days (2:1 orbital resonance with Dione)",
+    "Cryovolcanism": "Tiger Stripe fissures erupting 200 kg/s water vapor, silica & organics",
+    "Saturn's E-Ring": "Cryovolcanic plume continuously regenerates Saturn's broad E-Ring",
+    "Astrobiology": "Alkaline hydrothermal ocean containing molecular hydrogen (H₂) and organics"
+  }
+}

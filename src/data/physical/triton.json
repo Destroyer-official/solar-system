@@ -1,0 +1,20 @@
+{
+  "rotation": {
+    "poleRaDeg": 299.36,
+    "poleDecDeg": 43.46,
+    "w0Deg": 44.5,
+    "wRateDegPerDay": -61.2572637
+  },
+  "flattening": 0.0,
+  "texture": "/textures/triton.jpg",
+  "facts": {
+    "Host Body": "Neptune",
+    "Equatorial Radius": "1,353.4 km",
+    "Mass": "2.14 × 10²² kg",
+    "Retrograde Orbit": "Only large moon in Solar System orbiting retrograde (156.8° inclination)",
+    "Captured KBO": "Captured dwarf planet from Kuiper Belt (analogous to Pluto)",
+    "Active Cryogeysers": "Plumes of gaseous nitrogen and dark dust erupting 8 km high into exosphere",
+    "Cantaloupe Terrain": "Unique surface texture of dimpled cryogenic terrain",
+    "Surface Temperature": "38 K (-235 °C), one of the coldest known bodies in the Solar System"
+  }
+}

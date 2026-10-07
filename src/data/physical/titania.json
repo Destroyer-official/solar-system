@@ -1,0 +1,17 @@
+{
+  "rotation": {
+    "poleRaDeg": 257.31,
+    "poleDecDeg": -15.18,
+    "w0Deg": 24.1,
+    "wRateDegPerDay": -41.3514316
+  },
+  "flattening": 0.005,
+  "texture": "/textures/titania.jpg",
+  "facts": {
+    "Host Body": "Uranus",
+    "Mean Radius": "788.4 km (Largest moon of Uranus)",
+    "Mass": "3.42 × 10²¹ kg",
+    "Orbital Period": "8.706 days (Synchronously Tidally Locked 1:1)",
+    "Messina Chasma": "Enormous rift canyon system extending 1,500 km across the globe"
+  }
+}

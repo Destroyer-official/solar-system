@@ -1,0 +1,18 @@
+{
+  "rotation": {
+    "poleRaDeg": 257.31,
+    "poleDecDeg": -15.18,
+    "w0Deg": 30.1,
+    "wRateDegPerDay": -254.6906892
+  },
+  "flattening": 0.01,
+  "texture": "/textures/miranda.jpg",
+  "facts": {
+    "Host Body": "Uranus",
+    "Mean Radius": "235.8 km",
+    "Mass": "6.59 × 10¹⁹ kg",
+    "Orbital Period": "1.413 days (Synchronously Tidally Locked 1:1)",
+    "Verona Rupes": "Highest cliff face in Solar System (20 km sheer drop; 12-minute free fall!)",
+    "Coronae Terrain": "Giant ovoid grooved tectonic features (Arden, Elsinore, Inverness Coronae)"
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "rotation": {
+    "poleRaDeg": 132.993,
+    "poleDecDeg": -6.163,
+    "w0Deg": 122.695,
+    "wRateDegPerDay": -56.3623
+  },
+  "flattening": 0.0,
+  "texture": "/textures/charon.jpg",
+  "facts": {
+    "Host Body": "Pluto (Binary Dwarf Planet System)",
+    "Equatorial Radius": "606.0 km (Over half the radius of Pluto!)",
+    "Mass": "1.586 × 10²¹ kg (12% of Pluto's mass)",
+    "Orbital Period": "6.387 days (Mutually Tidally Locked with Pluto 1:1)",
+    "System Barycenter": "Barycenter lies ~960 km outside Pluto's surface in open space",
+    "Mordor Macula": "Tholin-rich reddish organic deposit coating the north pole",
+    "Serenity Chasma": "Canyon system 4× deeper than the Grand Canyon (up to 9 km deep)"
+  }
+}

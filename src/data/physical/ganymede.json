@@ -1,0 +1,19 @@
+{
+  "rotation": {
+    "poleRaDeg": 268.20,
+    "poleDecDeg": 64.57,
+    "w0Deg": 44.064,
+    "wRateDegPerDay": 50.3176081
+  },
+  "flattening": 0.001,
+  "texture": "/textures/ganymede.jpg",
+  "facts": {
+    "Host Body": "Jupiter",
+    "Equatorial Radius": "2,634.1 km (Largest moon in the Solar System; larger than Mercury)",
+    "Mass": "1.482 × 10²³ kg",
+    "Orbital Period": "7.155 days (Laplace 4:2:1 resonance)",
+    "Intrinsic Magnetosphere": "Only moon known to generate an internal magnetic field",
+    "Internal Structure": "Liquid iron core, silicate mantle, internal liquid water ocean",
+    "Surface": "Dark ancient cratered terrain crosscut by bright young grooved terrain"
+  }
+}

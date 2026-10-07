@@ -1,0 +1,19 @@
+{
+  "rotation": {
+    "poleRaDeg": 268.72,
+    "poleDecDeg": 64.83,
+    "w0Deg": 259.51,
+    "wRateDegPerDay": 21.5710715
+  },
+  "flattening": 0.0,
+  "texture": "/textures/callisto.jpg",
+  "facts": {
+    "Host Body": "Jupiter",
+    "Equatorial Radius": "2,410.3 km (3rd largest moon in Solar System)",
+    "Mass": "1.076 × 10²³ kg",
+    "Orbital Period": "16.689 days (Synchronously Tidally Locked 1:1)",
+    "Cratering": "Most heavily cratered object known in the Solar System (ancient surface)",
+    "Impact Basins": "Valhalla (multi-ring basin 3,800 km wide) and Asgard",
+    "Radiation Environment": "Orbits outside Jupiter's lethal inner radiation belts"
+  }
+}

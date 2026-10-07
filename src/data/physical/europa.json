@@ -1,0 +1,20 @@
+{
+  "rotation": {
+    "poleRaDeg": 268.08,
+    "poleDecDeg": 64.51,
+    "w0Deg": 36.022,
+    "wRateDegPerDay": 101.3747235
+  },
+  "flattening": 0.001,
+  "texture": "/textures/europa.jpg",
+  "facts": {
+    "Host Body": "Jupiter",
+    "Equatorial Radius": "1,560.8 km",
+    "Mass": "4.800 × 10²² kg",
+    "Orbital Period": "3.551 days (2:1 resonance with Io, 1:2 with Ganymede)",
+    "Subsurface Ocean": "Global liquid water ocean 60-150 km deep beneath 15-25 km ice crust",
+    "Ocean Volume": "Contains 2-3× more liquid water than all Earth's oceans combined",
+    "Surface Features": "Lineae (red-brown tectonic fractures), chaos terrain, lenticulae",
+    "Exploration": "Target of NASA Europa Clipper and ESA JUICE missions"
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "rotation": {
+    "poleRaDeg": 257.31,
+    "poleDecDeg": -15.18,
+    "w0Deg": 39.5,
+    "wRateDegPerDay": -142.8356681
+  },
+  "flattening": 0.005,
+  "texture": "/textures/ariel.jpg",
+  "facts": {
+    "Host Body": "Uranus",
+    "Mean Radius": "578.9 km",
+    "Mass": "1.29 × 10²¹ kg",
+    "Orbital Period": "2.520 days (Synchronously Tidally Locked 1:1)",
+    "Surface": "Brightest surface of Uranus's moons; heavily faulted graben rift systems"
+  }
+}

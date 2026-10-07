@@ -1,0 +1,19 @@
+{
+  "rotation": {
+    "poleRaDeg": 268.05,
+    "poleDecDeg": 64.50,
+    "w0Deg": 200.39,
+    "wRateDegPerDay": 203.4889538
+  },
+  "flattening": 0.001,
+  "texture": "/textures/io.jpg",
+  "facts": {
+    "Host Body": "Jupiter",
+    "Equatorial Radius": "1,821.6 km",
+    "Mass": "8.932 × 10²² kg",
+    "Orbital Period": "1.769 days (Laplace 4:2:1 Orbital Resonance)",
+    "Tidal Heating": "Most volcanically active world in the Solar System (>400 active volcanoes)",
+    "Volcanic Plumes": "Sulfur and SO₂ erupting >300 km into space (Pele, Loki Patera)",
+    "Surface": "No impact craters; continually resurfaced by volcanic lava lakes"
+  }
+}

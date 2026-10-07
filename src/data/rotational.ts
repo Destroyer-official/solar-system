@@ -105,4 +105,25 @@ export const ROTATIONAL_DATA: Record<string, RotationalElements> = {
       opacity: 0.25,
     },
   },
+  pluto: {
+    id: 'pluto',
+    name: 'Pluto',
+    periodDays: -6.38723, // retrograde
+    tiltDeg: 122.53,
+    poleVector: [-0.6775, 0.6277, 0.384],
+  },
+  charon: {
+    id: 'charon',
+    name: 'Charon',
+    periodDays: -6.38723, // mutually tidally locked with Pluto
+    tiltDeg: 122.53,
+    poleVector: [-0.6775, 0.6277, 0.384],
+  },
+  moon: {
+    id: 'moon',
+    name: 'Moon',
+    periodDays: 27.32166, // tidally locked to Earth
+    tiltDeg: 1.54,
+    poleVector: [0.0, 0.0268, 0.9996],
+  },
 };

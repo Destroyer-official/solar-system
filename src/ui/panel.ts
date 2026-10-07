@@ -504,6 +504,23 @@ export function createPanel(root: HTMLElement, store: AppStore, ctx: PanelContex
                     .join('')}
                 </div>
               `
+                : sf.isMoon && sf.parentName && sf.distParentKm !== undefined
+                ? `
+                <div style="color:#67e8f9;font-weight:600;margin-bottom:3px;">🌙 Orbiting Host: ${sf.parentName}</div>
+                <div><strong>Distance to ${sf.parentName}:</strong> ${sf.distParentKm.toLocaleString('en-US', { maximumFractionDigits: 0 })} km (${sf.distParentAu?.toFixed(6)} AU)</div>
+                <div><strong>Orbital Speed around ${sf.parentName}:</strong> ${sf.speedRelParentKms?.toFixed(2)} km/s</div>
+                <div><strong>Orbital Period:</strong> ${sf.elements.period < 1 ? `${(sf.elements.period * 24).toFixed(1)} hours` : `${sf.elements.period.toFixed(2)} days`}</div>
+                <div><strong>Semi-Major Axis:</strong> ${(sf.elements.a * AU_KM).toLocaleString('en-US', { maximumFractionDigits: 0 })} km</div>
+                <div><strong>Eccentricity:</strong> ${sf.elements.e.toFixed(4)}</div>
+                <div><strong>Tidal Locking:</strong> Synchronous (${Math.abs(sf.siderealDayDays) < 1 ? `${(Math.abs(sf.siderealDayDays) * 24).toFixed(1)}h` : `${sf.siderealDayDays.toFixed(2)}d`})</div>
+                <div><strong>Axial Obliquity:</strong> ${sf.axialTiltDeg.toFixed(2)}°</div>
+                <div><strong>Dist to Sun:</strong> ${sf.distSunAu.toFixed(3)} AU (${sf.lightMinutes.toFixed(1)} light-min)</div>
+                <div style="margin-top:4px;border-top:1px dashed rgba(255,255,255,0.15);padding-top:4px;">
+                  ${Object.entries(sf.facts)
+                    .map(([k, v]) => `<div><strong>${k}:</strong> ${v}</div>`)
+                    .join('')}
+                </div>
+              `
                 : `
                 <div><strong>Dist to Sun:</strong> ${sf.distSunAu.toFixed(4)} AU (${(sf.distSunAu * AU_KM).toLocaleString('en-US', { maximumFractionDigits: 0 })} km)</div>
                 <div><strong>Light Travel:</strong> ${sf.lightMinutes.toFixed(2)} light-min</div>
@@ -512,7 +529,7 @@ export function createPanel(root: HTMLElement, store: AppStore, ctx: PanelContex
                 <div><strong>Eccentricity:</strong> ${sf.elements.e.toFixed(4)}</div>
                 <div><strong>Orbital Period:</strong> ${sf.elements.period >= 365.25 ? `${(sf.elements.period / 365.25).toFixed(2)} yr` : `${sf.elements.period.toFixed(2)} days`}</div>
                 <div><strong>Axial Tilt:</strong> ${sf.axialTiltDeg.toFixed(2)}°</div>
-                <div><strong>Sidereal Day:</strong> ${sf.siderealDayDays.toFixed(2)} d</div>
+                <div><strong>Sidereal Day:</strong> ${Math.abs(sf.siderealDayDays) < 1 ? `${(Math.abs(sf.siderealDayDays) * 24).toFixed(1)} hours` : `${sf.siderealDayDays.toFixed(2)} days`}</div>
                 <div><strong>Subsolar Point:</strong> ${sf.subsolarLatDeg.toFixed(1)}° lat, ${sf.subsolarLonDeg.toFixed(1)}° lon</div>
                 <div style="margin-top:4px;border-top:1px dashed rgba(255,255,255,0.15);padding-top:4px;">
                   ${Object.entries(sf.facts)

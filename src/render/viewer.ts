@@ -215,6 +215,7 @@ export function createViewer(
 
     const height = renderer.domElement.clientHeight || renderer.domElement.height || 600;
     const k = (2 * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * MIN_PIXEL_RADIUS) / height;
+    const kMoon = (2 * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * 2) / height;
     const daysSinceJ2000 = model.epochJd - JD_J2000 + s.t;
     const scaleMode = v.scaleMode ?? 'pixels';
     const scaleExag = v.scaleExaggeration ?? 20;
@@ -235,7 +236,7 @@ export function createViewer(
 
       // Apparent visual radius calculation
       const dist = camera.position.distanceTo(vis.group.position);
-      const visualRadius = vis.computeScale(scaleMode, dist, k, scaleExag);
+      const visualRadius = vis.computeScale(scaleMode, dist, vis.isMoon ? kMoon : k, scaleExag);
 
       // Apply scale: radius along x and y, oblate radius along z
       vis.mesh.scale.set(visualRadius, visualRadius, visualRadius * (1 - vis.flattening));

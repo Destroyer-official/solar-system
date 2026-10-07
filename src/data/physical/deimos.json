@@ -1,0 +1,18 @@
+{
+  "rotation": {
+    "poleRaDeg": 316.65,
+    "poleDecDeg": 53.52,
+    "w0Deg": 79.41,
+    "wRateDegPerDay": 285.161897
+  },
+  "flattening": 0.25,
+  "texture": "/textures/deimos.jpg",
+  "facts": {
+    "Host Body": "Mars",
+    "Mean Radius": "6.2 km (Dimensions: 15 × 12.2 × 11 km)",
+    "Mass": "1.476 × 10¹⁵ kg",
+    "Orbital Period": "30h 17m 55s (Synchronously Tidally Locked 1:1)",
+    "Semi-Major Axis": "23,463 km (Beyond Mars synchronous orbit)",
+    "Surface": "Heavily cratered, smoothed by a thick 100m blanket of loose regolith"
+  }
+}

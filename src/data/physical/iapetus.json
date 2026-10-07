@@ -1,0 +1,18 @@
+{
+  "rotation": {
+    "poleRaDeg": 318.24,
+    "poleDecDeg": 75.03,
+    "w0Deg": 120.3,
+    "wRateDegPerDay": 4.5379572
+  },
+  "flattening": 0.02,
+  "texture": "/textures/iapetus.jpg",
+  "facts": {
+    "Host Body": "Saturn",
+    "Mean Radius": "734.5 km",
+    "Mass": "1.805 × 10²¹ kg",
+    "Orbital Period": "79.330 days (High orbital inclination 15.47°)",
+    "Yin-Yang Albedo": "Leading hemisphere (Cassini Regio) dark as coal (0.04); trailing bright ice (0.6)",
+    "Equatorial Ridge": "Colossal mountain ridge 20 km high and 1,300 km long along equator"
+  }
+}

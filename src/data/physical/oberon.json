@@ -1,0 +1,17 @@
+{
+  "rotation": {
+    "poleRaDeg": 257.31,
+    "poleDecDeg": -15.18,
+    "w0Deg": 283.4,
+    "wRateDegPerDay": -26.7394932
+  },
+  "flattening": 0.005,
+  "texture": "/textures/oberon.jpg",
+  "facts": {
+    "Host Body": "Uranus",
+    "Mean Radius": "761.4 km (2nd largest moon of Uranus)",
+    "Mass": "3.01 × 10²¹ kg",
+    "Orbital Period": "13.463 days (Outermost major Uranian moon)",
+    "Hamlet Crater": "Large impact crater with dark unknown carbonaceous floor deposit"
+  }
+}

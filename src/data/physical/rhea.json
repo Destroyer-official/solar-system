@@ -1,0 +1,18 @@
+{
+  "rotation": {
+    "poleRaDeg": 40.59,
+    "poleDecDeg": 83.54,
+    "w0Deg": 310.0,
+    "wRateDegPerDay": 79.6900478
+  },
+  "flattening": 0.001,
+  "texture": "/textures/rhea.jpg",
+  "facts": {
+    "Host Body": "Saturn",
+    "Mean Radius": "763.8 km (Saturn's 2nd largest moon)",
+    "Mass": "2.306 × 10²¹ kg",
+    "Orbital Period": "4.518 days",
+    "Composition": "75% water ice, 25% rock; homogenous undifferentiated body",
+    "Exosphere": "Tenuous atmosphere of molecular oxygen (O₂) and carbon dioxide (CO₂)"
+  }
+}
