@@ -240,8 +240,7 @@ export function createViewer(
       // Apply scale: radius along x and y, oblate radius along z
       vis.mesh.scale.set(visualRadius, visualRadius, visualRadius * (1 - vis.flattening));
       if (vis.ringMesh) {
-        const ringScale = visualRadius / vis.radiusAu;
-        vis.ringMesh.scale.setScalar(ringScale);
+        vis.ringMesh.scale.set(visualRadius, visualRadius, visualRadius);
       }
 
       // Update 3D billboard label

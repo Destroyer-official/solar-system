@@ -490,6 +490,14 @@ export class GalaxyVisual {
     const vLen = Math.hypot(state.vx, state.vy, state.vz) || 1;
     const dir = new THREE.Vector3(state.vx / vLen, state.vy / vLen, (state.vz * this.zExaggeration) / vLen);
     this.velArrow.setDirection(dir.normalize());
+
+    // Rotate Milky Way spiral arms and bulge around Sagittarius A*
+    // Based on IAU & Gaia DR3 rotation curve at R0 = 8.2 kpc (V0 ≈ 230 km/s):
+    // Omega_0 = V0 / R0 ≈ 28.05 km/s/kpc = 0.028688 rad/Myr (~219 Myr revolution period)
+    const omega = 0.028688; // rad / Myr
+    const galAngle = state.tMyr * omega;
+    this.starsPoints.rotation.z = galAngle;
+    this.bulgePoints.rotation.z = galAngle;
   }
 
   getSunPosition(target: THREE.Vector3): THREE.Vector3 {
@@ -501,24 +509,24 @@ export class GalaxyVisual {
   }
 
   setUnifiedMode(cameraDistAu: number, showHalo = true): void {
-    const isClose = cameraDistAu < 250;
-    // When close to the Sun/Solar System (<250 AU), hide 3D local particles, yellow orbit line,
-    // and Sgr A* marker to prevent pixel blobs or lines cutting through planets.
-    // The celestial Milky Way sphere (starfield.ts) provides the glorious, photorealistic sky background.
-    this.sunMarker.visible = !isClose;
-    this.orbitLine.visible = !isClose;
-    this.sgrAMarker.visible = !isClose;
-    this.gridGroup.visible = !isClose;
-    this.haloGroup.visible = showHalo && !isClose;
-    this.starsPoints.visible = !isClose;
-    this.bulgePoints.visible = !isClose;
+    // When viewing the Solar System (< 800 AU), hide 3D galaxy particles, orbit rosette line,
+    // and sunMarker icon to keep the real 3D Sun and planetary system pristine.
+    // The celestial Milky Way sphere (starfield.ts) provides the authentic IAU sky background.
+    const isSolarScale = cameraDistAu < 800;
+    this.sunMarker.visible = !isSolarScale;
+    this.orbitLine.visible = !isSolarScale;
+    this.sgrAMarker.visible = !isSolarScale;
+    this.gridGroup.visible = !isSolarScale;
+    this.haloGroup.visible = showHalo && !isSolarScale;
+    this.starsPoints.visible = !isSolarScale;
+    this.bulgePoints.visible = !isSolarScale;
 
-    if (!isClose) {
+    if (!isSolarScale) {
       const starMat = this.starsPoints.material as THREE.PointsMaterial;
       const bulgeMat = this.bulgePoints.material as THREE.PointsMaterial;
       starMat.size = 0.14;
       bulgeMat.size = 0.22;
-      const fade = Math.min(0.95, (cameraDistAu - 250) / 400);
+      const fade = Math.min(0.95, (cameraDistAu - 800) / 600);
       starMat.opacity = fade;
       bulgeMat.opacity = fade;
     }

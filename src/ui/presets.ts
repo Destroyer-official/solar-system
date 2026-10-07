@@ -17,7 +17,7 @@ export const PRESETS: Record<string, Preset> = {
     focus: 'sgra',
     dir: [0.15, -0.65, 0.74],
     dist: 2800,
-    trailDays: 29220,
+    trailDays: 365,
   },
   sgra: {
     label: '🕳️ Sgr A* (Galactic Core)',
@@ -26,7 +26,7 @@ export const PRESETS: Record<string, Preset> = {
     focus: 'sgra',
     dir: [-0.95, -0.2, 0.25],
     dist: 350,
-    trailDays: 29220,
+    trailDays: 365,
   },
   cosmic: {
     label: '🌀 Galactic Corkscrew (230 km/s)',

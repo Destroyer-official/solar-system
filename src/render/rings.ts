@@ -1,13 +1,18 @@
 import * as THREE from 'three';
-import { AU_KM } from '@/data/constants';
 import type { RingDef } from '@/data/rotational';
 import { createSaturnRingTexture } from './textures';
 
-export function createPlanetaryRing(ring: RingDef, planetId: string): THREE.Mesh {
-  const innerAu = ring.innerRadiusKm / AU_KM;
-  const outerAu = ring.outerRadiusKm / AU_KM;
+/**
+ * Creates a planetary ring mesh (Saturn, Uranus, Neptune).
+ * Geometry is normalized such that r = 1.0 corresponds exactly to 1.0 planet physical radius,
+ * matching Three.js SphereGeometry(1.0).
+ * This ensures the ring scales in 1:1 physical proportion with the planet's visual sphere at all times.
+ */
+export function createPlanetaryRing(ring: RingDef, planetId: string, planetRadiusKm: number): THREE.Mesh {
+  const innerR = ring.innerRadiusKm / planetRadiusKm;
+  const outerR = ring.outerRadiusKm / planetRadiusKm;
 
-  const geom = new THREE.RingGeometry(innerAu, outerAu, 128);
+  const geom = new THREE.RingGeometry(innerR, outerR, 192);
 
   // Remap UVs radially: u = (r - inner) / (outer - inner), v = 0.5
   const pos = geom.attributes.position!;
@@ -16,7 +21,7 @@ export function createPlanetaryRing(ring: RingDef, planetId: string): THREE.Mesh
     const x = pos.getX(i);
     const y = pos.getY(i);
     const r = Math.hypot(x, y);
-    const u = Math.min(1, Math.max(0, (r - innerAu) / (outerAu - innerAu)));
+    const u = Math.min(1, Math.max(0, (r - innerR) / (outerR - innerR)));
     uvs.setXY(i, u, 0.5);
   }
   uvs.needsUpdate = true;

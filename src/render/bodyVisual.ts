@@ -190,7 +190,7 @@ export class BodyVisual {
         neptune: { innerRadiusKm: 41900, outerRadiusKm: 62933, color: '#658ed1', opacity: 0.25 },
       }[opts.id];
       if (ringDef) {
-        this.ringMesh = createPlanetaryRing(ringDef, opts.id);
+        this.ringMesh = createPlanetaryRing(ringDef, opts.id, opts.radiusKm);
         this.group.add(this.ringMesh);
       }
     }
