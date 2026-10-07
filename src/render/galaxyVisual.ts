@@ -108,7 +108,7 @@ export class GalaxyVisual {
     starGeom.setAttribute('color', new THREE.BufferAttribute(starColors, 3));
 
     const starMat = new THREE.PointsMaterial({
-      size: 2.2,
+      size: 3.5,
       sizeAttenuation: false,
       vertexColors: true,
       map: starTex,
@@ -118,6 +118,7 @@ export class GalaxyVisual {
       opacity: 0.95,
     });
     this.starsPoints = new THREE.Points(starGeom, starMat);
+    this.starsPoints.frustumCulled = false;
     this.group.add(this.starsPoints);
 
     // 2. Central Galactic Bulge (Thicker spheroidal core)
@@ -154,7 +155,7 @@ export class GalaxyVisual {
     bulgeGeom.setAttribute('color', new THREE.BufferAttribute(bulgeColors, 3));
 
     const bulgeMat = new THREE.PointsMaterial({
-      size: 3.2,
+      size: 6.0,
       sizeAttenuation: false,
       vertexColors: true,
       map: starTex,
@@ -164,6 +165,7 @@ export class GalaxyVisual {
       opacity: 0.95,
     });
     this.bulgePoints = new THREE.Points(bulgeGeom, bulgeMat);
+    this.bulgePoints.frustumCulled = false;
     this.group.add(this.bulgePoints);
 
     // 3. Spherical Stellar Halo (Population II ancient stars, r ~ 2 to 35 kpc)
@@ -208,16 +210,17 @@ export class GalaxyVisual {
     haloGeom.setAttribute('color', new THREE.BufferAttribute(haloColors, 3));
 
     const haloMat = new THREE.PointsMaterial({
-      size: 1.8,
+      size: 2.2,
       sizeAttenuation: false,
       vertexColors: true,
       map: starTex,
       transparent: true,
-      opacity: 0.7,
+      opacity: 0.75,
       blending: THREE.AdditiveBlending,
       depthWrite: false,
     });
     this.haloPoints = new THREE.Points(haloGeom, haloMat);
+    this.haloPoints.frustumCulled = false;
     this.haloGroup.add(this.haloPoints);
 
     // 4. Globular Clusters (158 known Harris catalog clusters, spherical distribution)
@@ -253,7 +256,7 @@ export class GalaxyVisual {
     globGeom.setAttribute('color', new THREE.BufferAttribute(globColors, 3));
 
     const globMat = new THREE.PointsMaterial({
-      size: 4.5,
+      size: 6.0,
       sizeAttenuation: false,
       vertexColors: true,
       map: starTex,
@@ -263,6 +266,7 @@ export class GalaxyVisual {
       depthWrite: false,
     });
     this.globularPoints = new THREE.Points(globGeom, globMat);
+    this.globularPoints.frustumCulled = false;
     this.haloGroup.add(this.globularPoints);
 
     // 5. Dark Matter Halo Virial Boundary Shells (25 kpc & 40 kpc spherical guides)
@@ -359,8 +363,8 @@ export class GalaxyVisual {
     const ctx = canvas.getContext('2d')!;
     const grad = ctx.createRadialGradient(32, 32, 0, 32, 32, 32);
     grad.addColorStop(0, 'rgba(255, 255, 255, 1.0)');
-    grad.addColorStop(0.2, 'rgba(240, 248, 255, 0.95)');
-    grad.addColorStop(0.5, 'rgba(180, 215, 255, 0.45)');
+    grad.addColorStop(0.45, 'rgba(255, 255, 255, 1.0)');
+    grad.addColorStop(0.75, 'rgba(235, 245, 255, 0.85)');
     grad.addColorStop(1.0, 'rgba(0, 0, 0, 0)');
     ctx.fillStyle = grad;
     ctx.fillRect(0, 0, 64, 64);
@@ -532,8 +536,8 @@ export class GalaxyVisual {
 
     const starMat = this.starsPoints.material as THREE.PointsMaterial;
     const bulgeMat = this.bulgePoints.material as THREE.PointsMaterial;
-    starMat.size = 2.4;
-    bulgeMat.size = 3.6;
+    starMat.size = 3.5;
+    bulgeMat.size = 6.0;
     starMat.opacity = 0.95;
     bulgeMat.opacity = 0.95;
   }

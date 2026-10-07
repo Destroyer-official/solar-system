@@ -171,32 +171,73 @@ export function createViewer(
     galaxyVisual.setOrbitPath(path);
   }
 
-  function getSgrAPosition(): THREE.Vector3 {
-    if (galaxyVisual.group.position.lengthSq() > 10) {
-      return galaxyVisual.group.position.clone();
-    }
+  function updateGalaxyTransform(frame: ReferenceFrame, state?: GalacticOrbitState): THREE.Vector3 {
     const S_GAL = 60.0;
     const [GX_SIM, GY_SIM, GZ_SIM] = GALACTIC_AXES_IN_SIM;
+
     const mRotEcl = new THREE.Matrix4().set(
       GX_SIM[0]!, GY_SIM[0]!, GZ_SIM[0]!, 0,
       GX_SIM[1]!, GY_SIM[1]!, GZ_SIM[1]!, 0,
       GX_SIM[2]!, GY_SIM[2]!, GZ_SIM[2]!, 0,
       0,          0,          0,          1,
     );
-    const sunGal = new THREE.Vector3(-8.2, 0, 0.0208).multiplyScalar(S_GAL);
-    sunGal.applyMatrix4(mRotEcl);
+
+    let mRotScene = mRotEcl;
+    if (frame.axes) {
+      const frameAxes = frame.axes;
+      const mFrame = new THREE.Matrix4().set(
+        frameAxes[0]!, frameAxes[1]!, frameAxes[2]!, 0,
+        frameAxes[3]!, frameAxes[4]!, frameAxes[5]!, 0,
+        frameAxes[6]!, frameAxes[7]!, frameAxes[8]!, 0,
+        0,             0,             0,             1,
+      );
+      mRotScene = mFrame.clone().multiply(mRotEcl);
+    }
+
+    const sunGalX = state?.x ?? -8.2;
+    const sunGalY = state?.y ?? 0;
+    const sunGalZ = state?.z ?? 0.0208;
+
+    const sunGal = new THREE.Vector3(sunGalX, sunGalY, sunGalZ).multiplyScalar(S_GAL);
+    sunGal.applyMatrix4(mRotScene);
+
     const sunScenePos = visuals[0] ? visuals[0].group.position : new THREE.Vector3();
-    return sunScenePos.clone().sub(sunGal);
+    const galPos = sunScenePos.clone().sub(sunGal);
+
+    galaxyVisual.group.position.copy(galPos);
+    galaxyVisual.group.rotation.setFromRotationMatrix(mRotScene);
+    galaxyVisual.group.scale.set(S_GAL, S_GAL, S_GAL);
+
+    if (state) {
+      galaxyVisual.update(state);
+    }
+
+    return galPos;
   }
 
-  function setGalaxyView(viewType: string, _state?: GalacticOrbitState, _zExag = 1): void {
-    const sgrPos = getSgrAPosition();
+  function setGalaxyView(
+    viewType: string,
+    frame?: ReferenceFrame,
+    state?: GalacticOrbitState,
+    _zExag = 1,
+  ): void {
+    // Determine target Sagittarius A* position strictly in the given frame
+    let sgrPos: THREE.Vector3;
+    if (frame) {
+      sgrPos = updateGalaxyTransform(frame, state);
+    } else if (galaxyVisual.group.position.lengthSq() > 10) {
+      sgrPos = galaxyVisual.group.position.clone();
+    } else {
+      // Default fallback: galactic-aligned frame where Sgr A* is at (+492, 0, 0)
+      sgrPos = new THREE.Vector3(492.0, 0, 0);
+    }
+
     if (viewType === 'face-on') {
-      // Offset slightly along Y to prevent gimbal lock with camera.up = (0, 0, 1)
-      camera.position.set(sgrPos.x + 0.01, sgrPos.y - 30, sgrPos.z + 2800);
+      // Overhead perspective with 20° tilt away from vertical to avoid gimbal singularity with camera.up = (0, 0, 1)
+      camera.position.set(sgrPos.x, sgrPos.y - 800, sgrPos.z + 2500);
       controls.target.copy(sgrPos);
     } else if (viewType === 'edge-on') {
-      camera.position.set(sgrPos.x, sgrPos.y - 2600, sgrPos.z);
+      camera.position.set(sgrPos.x, sgrPos.y - 2600, sgrPos.z + 50);
       controls.target.copy(sgrPos);
     } else if (viewType === 'follow-sun') {
       const sunPos = visuals[0] ? visuals[0].group.position : new THREE.Vector3();
@@ -311,47 +352,7 @@ export function createViewer(
       if (v.galaxyZExag !== undefined) {
         galaxyVisual.setVerticalExaggeration(v.galaxyZExag);
       }
-
-      const S_GAL = 60.0;
-      const [GX_SIM, GY_SIM, GZ_SIM] = GALACTIC_AXES_IN_SIM;
-
-      const mRotEcl = new THREE.Matrix4().set(
-        GX_SIM[0]!, GY_SIM[0]!, GZ_SIM[0]!, 0,
-        GX_SIM[1]!, GY_SIM[1]!, GZ_SIM[1]!, 0,
-        GX_SIM[2]!, GY_SIM[2]!, GZ_SIM[2]!, 0,
-        0,          0,          0,          1,
-      );
-
-      let mRotScene = mRotEcl;
-      if (v.frame.axes) {
-        const frameAxes = v.frame.axes;
-        const mFrame = new THREE.Matrix4().set(
-          frameAxes[0]!, frameAxes[1]!, frameAxes[2]!, 0,
-          frameAxes[3]!, frameAxes[4]!, frameAxes[5]!, 0,
-          frameAxes[6]!, frameAxes[7]!, frameAxes[8]!, 0,
-          0,             0,             0,             1,
-        );
-        mRotScene = mFrame.clone().multiply(mRotEcl);
-      }
-
-      const sunGalX = v.galaxyState?.x ?? -8.2;
-      const sunGalY = v.galaxyState?.y ?? 0;
-      const sunGalZ = v.galaxyState?.z ?? 0.0208;
-
-      const sunGal = new THREE.Vector3(sunGalX, sunGalY, sunGalZ).multiplyScalar(S_GAL);
-      sunGal.applyMatrix4(mRotScene);
-
-      // visuals[0] is the Sun
-      const sunScenePos = visuals[0]!.group.position;
-      const galPos = sunScenePos.clone().sub(sunGal);
-
-      galaxyVisual.group.position.copy(galPos);
-      galaxyVisual.group.rotation.setFromRotationMatrix(mRotScene);
-      galaxyVisual.group.scale.set(S_GAL, S_GAL, S_GAL);
-
-      if (v.galaxyState) {
-        galaxyVisual.update(v.galaxyState);
-      }
+      updateGalaxyTransform(v.frame, v.galaxyState);
     } else {
       galaxyVisual.setVisible(false);
     }

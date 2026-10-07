@@ -88,10 +88,11 @@ const focusIndex = (id: string) => (id === 'barycenter' || id === 'sgra' ? -1 : 
 
 function viewPreset(id: string): void {
   const p = validPresets[id] ?? PRESETS[id]!;
+  const targetFrame = frameById.get(p.frame);
   if (id === 'milkyWay') {
-    viewer.setGalaxyView('overview', galaxySim.getState(), store.get().galaxyZExag);
+    viewer.setGalaxyView('overview', targetFrame, galaxySim.getState(), store.get().galaxyZExag);
   } else if (id === 'sgra') {
-    viewer.setGalaxyView('sgra', galaxySim.getState(), store.get().galaxyZExag);
+    viewer.setGalaxyView('sgra', targetFrame, galaxySim.getState(), store.get().galaxyZExag);
   } else {
     viewer.setView(p.dir, p.dist);
   }
@@ -169,7 +170,7 @@ const panel = createPanel(document.getElementById('panel')!, store, {
   },
   onGalaxyReset: () => galaxySim.reset(),
   onGalaxyCamera: (cam) =>
-    viewer.setGalaxyView(cam, galaxySim.getState(), store.get().galaxyZExag),
+    viewer.setGalaxyView(cam, frameById.get(store.get().frame), galaxySim.getState(), store.get().galaxyZExag),
   onGalaxyModelChange: (modelId) => {
     const lsr = getLsrKms(modelId);
     frames = buildFrames(model.ids, model.names, lsr);
