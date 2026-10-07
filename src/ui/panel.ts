@@ -171,10 +171,7 @@ export function createPanel(root: HTMLElement, store: AppStore, ctx: PanelContex
           <button id="now" title="Sync live to current real-world UTC time">Now (Live)</button>
         </div>
 
-        <!-- Selected Body Facts Card (Immediate Visibility) -->
-        <div id="factsBox" class="facts-box" style="display:none; margin-top: 4px;"></div>
-
-        <!-- Categorized Cosmic Presets -->
+        <!-- Categorized Cosmic Presets (Instant Navigation) -->
         <div style="margin-top: 4px;">
           <div style="font-size: 11px; font-weight: 600; color: #cbd5e1; margin-bottom: 4px; display: flex; align-items: center; justify-content: space-between;">
             <span>Camera View Presets</span>
@@ -196,8 +193,15 @@ export function createPanel(root: HTMLElement, store: AppStore, ctx: PanelContex
             <!-- Close-Up Visits -->
             <div style="font-size: 10px; color: #f472b6; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; margin-top: 2px;">🔭 Close-up Planet Visits</div>
             <div class="row" id="presets-visits"></div>
+
+            <!-- Iconic Moon Visits -->
+            <div style="font-size: 10px; color: #38bdf8; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; margin-top: 2px;">🔬 Iconic Moon Visits</div>
+            <div class="row" id="presets-moon-visits"></div>
           </div>
         </div>
+
+        <!-- Selected Body Facts Card (Right Below Presets) -->
+        <div id="factsBox" class="facts-box" style="display:none; margin-top: 6px;"></div>
 
         <!-- Camera Focus & Reference Frame -->
         <label>Camera follows (Focus Body)
@@ -316,6 +320,7 @@ export function createPanel(root: HTMLElement, store: AppStore, ctx: PanelContex
   const solPresets = ctx.presets.filter((p) => p.category === 'solar');
   const moonPresets = ctx.presets.filter((p) => p.category === 'moons');
   const visitPresets = ctx.presets.filter((p) => p.category === 'visits');
+  const moonVisitPresets = ctx.presets.filter((p) => p.category === 'moonVisits');
 
   const renderPresetButtons = (el: HTMLElement | null, list: Option[]) => {
     if (!el) return;
@@ -328,6 +333,7 @@ export function createPanel(root: HTMLElement, store: AppStore, ctx: PanelContex
   renderPresetButtons(q<HTMLElement>('#presets-solar'), solPresets);
   renderPresetButtons(q<HTMLElement>('#presets-moons'), moonPresets);
   renderPresetButtons(q<HTMLElement>('#presets-visits'), visitPresets);
+  renderPresetButtons(q<HTMLElement>('#presets-moon-visits'), moonVisitPresets);
 
   dateIn.value = new Date().toISOString().slice(0, 10);
 

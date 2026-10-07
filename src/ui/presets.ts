@@ -1,6 +1,6 @@
 export interface Preset {
   label: string;
-  category?: 'galaxy' | 'solar' | 'moons' | 'visits';
+  category?: 'galaxy' | 'solar' | 'moons' | 'visits' | 'moonVisits';
   frame: string; // ReferenceFrame id
   focus: string; // 'barycenter' or body id
   dir: readonly [number, number, number]; // camera direction (normalized later)
@@ -236,7 +236,7 @@ export const PRESETS: Record<string, Preset> = {
   // 5. Iconic Moon Surface Visits
   visitMoon: {
     label: 'Visit Moon',
-    category: 'visits',
+    category: 'moonVisits',
     frame: 'body:moon',
     focus: 'moon',
     dir: [0, -0.8, 0.45],
@@ -245,7 +245,7 @@ export const PRESETS: Record<string, Preset> = {
   },
   visitIo: {
     label: 'Visit Io (Volcanoes)',
-    category: 'visits',
+    category: 'moonVisits',
     frame: 'body:io',
     focus: 'io',
     dir: [0, -0.8, 0.45],
@@ -254,7 +254,7 @@ export const PRESETS: Record<string, Preset> = {
   },
   visitEuropa: {
     label: 'Visit Europa (Ocean)',
-    category: 'visits',
+    category: 'moonVisits',
     frame: 'body:europa',
     focus: 'europa',
     dir: [0, -0.8, 0.45],
@@ -263,7 +263,7 @@ export const PRESETS: Record<string, Preset> = {
   },
   visitGanymede: {
     label: 'Visit Ganymede',
-    category: 'visits',
+    category: 'moonVisits',
     frame: 'body:ganymede',
     focus: 'ganymede',
     dir: [0, -0.8, 0.45],
@@ -272,7 +272,7 @@ export const PRESETS: Record<string, Preset> = {
   },
   visitTitan: {
     label: 'Visit Titan (Methane Seas)',
-    category: 'visits',
+    category: 'moonVisits',
     frame: 'body:titan',
     focus: 'titan',
     dir: [0, -0.8, 0.45],
@@ -281,7 +281,7 @@ export const PRESETS: Record<string, Preset> = {
   },
   visitEnceladus: {
     label: 'Visit Enceladus (Geysers)',
-    category: 'visits',
+    category: 'moonVisits',
     frame: 'body:enceladus',
     focus: 'enceladus',
     dir: [0, -0.8, 0.45],
@@ -290,7 +290,7 @@ export const PRESETS: Record<string, Preset> = {
   },
   visitTriton: {
     label: 'Visit Triton (Retrograde)',
-    category: 'visits',
+    category: 'moonVisits',
     frame: 'body:triton',
     focus: 'triton',
     dir: [0, -0.8, 0.45],
@@ -299,7 +299,7 @@ export const PRESETS: Record<string, Preset> = {
   },
   visitCharon: {
     label: 'Visit Charon (Binary)',
-    category: 'visits',
+    category: 'moonVisits',
     frame: 'body:charon',
     focus: 'charon',
     dir: [0, -0.8, 0.45],

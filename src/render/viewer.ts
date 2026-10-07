@@ -20,7 +20,7 @@ const MIN_PIXEL_RADIUS = 4;
 
 export interface ViewState {
   mode?: 'solar' | 'galaxy';
-  presetCategory?: 'galaxy' | 'solar' | 'moons' | 'visits';
+  presetCategory?: 'galaxy' | 'solar' | 'moons' | 'visits' | 'moonVisits';
   showMilkyWay?: boolean;
   showOortCloud?: boolean;
   showGalacticHalo?: boolean;
