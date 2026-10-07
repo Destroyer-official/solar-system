@@ -171,10 +171,29 @@ export function createViewer(
     galaxyVisual.setOrbitPath(path);
   }
 
+  function getSgrAPosition(): THREE.Vector3 {
+    if (galaxyVisual.group.position.lengthSq() > 10) {
+      return galaxyVisual.group.position.clone();
+    }
+    const S_GAL = 60.0;
+    const [GX_SIM, GY_SIM, GZ_SIM] = GALACTIC_AXES_IN_SIM;
+    const mRotEcl = new THREE.Matrix4().set(
+      GX_SIM[0]!, GY_SIM[0]!, GZ_SIM[0]!, 0,
+      GX_SIM[1]!, GY_SIM[1]!, GZ_SIM[1]!, 0,
+      GX_SIM[2]!, GY_SIM[2]!, GZ_SIM[2]!, 0,
+      0,          0,          0,          1,
+    );
+    const sunGal = new THREE.Vector3(-8.2, 0, 0.0208).multiplyScalar(S_GAL);
+    sunGal.applyMatrix4(mRotEcl);
+    const sunScenePos = visuals[0] ? visuals[0].group.position : new THREE.Vector3();
+    return sunScenePos.clone().sub(sunGal);
+  }
+
   function setGalaxyView(viewType: string, _state?: GalacticOrbitState, _zExag = 1): void {
-    const sgrPos = galaxyVisual.group.position;
+    const sgrPos = getSgrAPosition();
     if (viewType === 'face-on') {
-      camera.position.set(sgrPos.x, sgrPos.y + 0.01, sgrPos.z + 2800);
+      // Offset slightly along Y to prevent gimbal lock with camera.up = (0, 0, 1)
+      camera.position.set(sgrPos.x + 0.01, sgrPos.y - 30, sgrPos.z + 2800);
       controls.target.copy(sgrPos);
     } else if (viewType === 'edge-on') {
       camera.position.set(sgrPos.x, sgrPos.y - 2600, sgrPos.z);
@@ -187,8 +206,8 @@ export function createViewer(
       controls.target.copy(sgrPos);
       camera.position.set(sgrPos.x, sgrPos.y - 350, sgrPos.z + 120);
     } else {
-      // perspective overview
-      camera.position.set(sgrPos.x - 1400, sgrPos.y - 1800, sgrPos.z + 1500);
+      // Perspective overview: full 18 kpc rotating spiral disk and golden nucleus
+      camera.position.set(sgrPos.x - 1200, sgrPos.y - 1600, sgrPos.z + 1800);
       controls.target.copy(sgrPos);
     }
     controls.update();
@@ -284,11 +303,11 @@ export function createViewer(
     }
 
     // Milky Way Galaxy in unified cosmos: active and visible across cosmological scales
-    const camDist = camera.position.length();
+    const camDistToSun = visuals[0] ? camera.position.distanceTo(visuals[0]!.group.position) : camera.position.length();
 
     if (v.showMilkyWay !== false) {
       galaxyVisual.setVisible(true);
-      galaxyVisual.setUnifiedMode(camDist, v.showGalacticHalo !== false);
+      galaxyVisual.setUnifiedMode(camDistToSun, v.showGalacticHalo !== false);
       if (v.galaxyZExag !== undefined) {
         galaxyVisual.setVerticalExaggeration(v.galaxyZExag);
       }

@@ -108,12 +108,14 @@ export class GalaxyVisual {
     starGeom.setAttribute('color', new THREE.BufferAttribute(starColors, 3));
 
     const starMat = new THREE.PointsMaterial({
-      size: 0.12,
+      size: 2.2,
+      sizeAttenuation: false,
       vertexColors: true,
       map: starTex,
       transparent: true,
       blending: THREE.AdditiveBlending,
       depthWrite: false,
+      opacity: 0.95,
     });
     this.starsPoints = new THREE.Points(starGeom, starMat);
     this.group.add(this.starsPoints);
@@ -152,12 +154,14 @@ export class GalaxyVisual {
     bulgeGeom.setAttribute('color', new THREE.BufferAttribute(bulgeColors, 3));
 
     const bulgeMat = new THREE.PointsMaterial({
-      size: 0.18,
+      size: 3.2,
+      sizeAttenuation: false,
       vertexColors: true,
       map: starTex,
       transparent: true,
       blending: THREE.AdditiveBlending,
       depthWrite: false,
+      opacity: 0.95,
     });
     this.bulgePoints = new THREE.Points(bulgeGeom, bulgeMat);
     this.group.add(this.bulgePoints);
@@ -204,11 +208,12 @@ export class GalaxyVisual {
     haloGeom.setAttribute('color', new THREE.BufferAttribute(haloColors, 3));
 
     const haloMat = new THREE.PointsMaterial({
-      size: 0.10,
+      size: 1.8,
+      sizeAttenuation: false,
       vertexColors: true,
       map: starTex,
       transparent: true,
-      opacity: 0.55,
+      opacity: 0.7,
       blending: THREE.AdditiveBlending,
       depthWrite: false,
     });
@@ -233,7 +238,6 @@ export class GalaxyVisual {
       const x = r * sintheta * Math.cos(phi);
       const y = r * sintheta * Math.sin(phi);
       const z = r * costheta;
-
       this.globularPositions[idx] = x;
       this.globularPositions[idx + 1] = y;
       this.globularPositions[idx + 2] = z;
@@ -249,7 +253,8 @@ export class GalaxyVisual {
     globGeom.setAttribute('color', new THREE.BufferAttribute(globColors, 3));
 
     const globMat = new THREE.PointsMaterial({
-      size: 0.55,
+      size: 4.5,
+      sizeAttenuation: false,
       vertexColors: true,
       map: starTex,
       transparent: true,
@@ -343,7 +348,7 @@ export class GalaxyVisual {
     this.gridGroup = this.createGalacticGuides();
     this.group.add(this.gridGroup);
 
-    this.group.visible = false;
+    this.group.visible = true;
   }
 
   private createStarTexture(): THREE.Texture {
@@ -353,13 +358,15 @@ export class GalaxyVisual {
     canvas.height = 64;
     const ctx = canvas.getContext('2d')!;
     const grad = ctx.createRadialGradient(32, 32, 0, 32, 32, 32);
-    grad.addColorStop(0, 'rgba(255, 255, 255, 1)');
-    grad.addColorStop(0.2, 'rgba(230, 240, 255, 0.85)');
-    grad.addColorStop(0.5, 'rgba(150, 190, 255, 0.25)');
-    grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+    grad.addColorStop(0, 'rgba(255, 255, 255, 1.0)');
+    grad.addColorStop(0.2, 'rgba(240, 248, 255, 0.95)');
+    grad.addColorStop(0.5, 'rgba(180, 215, 255, 0.45)');
+    grad.addColorStop(1.0, 'rgba(0, 0, 0, 0)');
     ctx.fillStyle = grad;
     ctx.fillRect(0, 0, 64, 64);
-    return new THREE.CanvasTexture(canvas);
+    const tex = new THREE.CanvasTexture(canvas);
+    tex.needsUpdate = true;
+    return tex;
   }
 
   private createDarkMatterGuides(): THREE.Group {
@@ -509,27 +516,26 @@ export class GalaxyVisual {
   }
 
   setUnifiedMode(cameraDistAu: number, showHalo = true): void {
-    // When viewing the Solar System (< 800 AU), hide 3D galaxy particles, orbit rosette line,
-    // and sunMarker icon to keep the real 3D Sun and planetary system pristine.
-    // The celestial Milky Way sphere (starfield.ts) provides the authentic IAU sky background.
-    const isSolarScale = cameraDistAu < 800;
-    this.sunMarker.visible = !isSolarScale;
-    this.orbitLine.visible = !isSolarScale;
-    this.sgrAMarker.visible = !isSolarScale;
-    this.gridGroup.visible = !isSolarScale;
-    this.haloGroup.visible = showHalo && !isSolarScale;
-    this.starsPoints.visible = !isSolarScale;
-    this.bulgePoints.visible = !isSolarScale;
+    // The 3D Milky Way disc, spiral arms, bulge, and halo remain visible across all scales
+    // so the galaxy is clearly rendered whether zoomed out to deep space or viewing the solar system.
+    this.starsPoints.visible = true;
+    this.bulgePoints.visible = true;
+    this.haloGroup.visible = showHalo;
 
-    if (!isSolarScale) {
-      const starMat = this.starsPoints.material as THREE.PointsMaterial;
-      const bulgeMat = this.bulgePoints.material as THREE.PointsMaterial;
-      starMat.size = 0.14;
-      bulgeMat.size = 0.22;
-      const fade = Math.min(0.95, (cameraDistAu - 800) / 600);
-      starMat.opacity = fade;
-      bulgeMat.opacity = fade;
-    }
+    // Deep space helper markers (cyan solar ring, velocity vector, rosette orbit path, Sagittarius A* core, kpc grid)
+    // are displayed when zoomed out (> 250 AU) so they don't occlude close planetary orbits
+    const isDeepSpace = cameraDistAu >= 250;
+    this.sunMarker.visible = isDeepSpace;
+    this.orbitLine.visible = isDeepSpace;
+    this.sgrAMarker.visible = isDeepSpace;
+    this.gridGroup.visible = isDeepSpace;
+
+    const starMat = this.starsPoints.material as THREE.PointsMaterial;
+    const bulgeMat = this.bulgePoints.material as THREE.PointsMaterial;
+    starMat.size = 2.4;
+    bulgeMat.size = 3.6;
+    starMat.opacity = 0.95;
+    bulgeMat.opacity = 0.95;
   }
 
   setSolarMode(isSolar: boolean): void {
