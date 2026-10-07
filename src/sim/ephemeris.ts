@@ -1,4 +1,4 @@
-import { AU_KM } from '@/data/constants';
+import { AU_KM, jdToDate } from '@/data/constants';
 import referenceData from '@/data/horizons-reference.json';
 import { cloneState } from '@/physics/system';
 import { Yoshida4 } from '@/physics/integrators/yoshida4';
@@ -7,6 +7,7 @@ import { GeneralRelativity } from '@/physics/forces/relativity';
 import { SolarQuadrupole } from '@/physics/forces/quadrupole';
 import type { SystemState } from '@/physics/types';
 import type { SystemModel } from './registry';
+import { horizonsClient } from './horizonsClient';
 
 export interface ValidationRow {
   offsetYears: number;
@@ -140,6 +141,49 @@ export class EphemerisProvider {
     }
     state.t = bestAnchor.offsetDays;
     return true;
+  }
+
+  /**
+   * Reseeds simulation state from live NASA JPL Horizons API vectors if online,
+   * falling back to local DE440 anchor tables.
+   */
+  async reseedLive(targetDays: number, state: SystemState): Promise<{ live: boolean; source: string }> {
+    const targetJd = this.model.epochJd + targetDays;
+    const targetDate = jdToDate(targetJd);
+
+    try {
+      const liveVectors = await horizonsClient.fetchSystem(this.model.ids, targetDate);
+      const keys = Object.keys(liveVectors);
+      if (keys.length >= 8) {
+        const newBodies: Record<string, number[]> = {};
+        for (let i = 0; i < this.model.ids.length; i++) {
+          const id = this.model.ids[i]!;
+          const vec = liveVectors[id];
+          if (vec) {
+            state.pos[3 * i] = vec.positionAu[0];
+            state.pos[3 * i + 1] = vec.positionAu[1];
+            state.pos[3 * i + 2] = vec.positionAu[2];
+
+            state.vel[3 * i] = vec.velocityAuDay[0];
+            state.vel[3 * i + 1] = vec.velocityAuDay[1];
+            state.vel[3 * i + 2] = vec.velocityAuDay[2];
+
+            newBodies[id] = [...vec.positionAu];
+          }
+        }
+        state.t = targetDays;
+
+        this.anchors.push({ offsetDays: targetDays, bodies: newBodies });
+        this.anchors.sort((a, b) => a.offsetDays - b.offsetDays);
+
+        return { live: true, source: liveVectors['sun']?.source ?? 'DE441' };
+      }
+    } catch {
+      // Offline fallback
+    }
+
+    this.reseed(targetDays, state);
+    return { live: false, source: 'DE440 (Local)' };
   }
 
   /**

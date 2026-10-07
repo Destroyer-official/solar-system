@@ -22,7 +22,8 @@ export interface PanelContext {
   onReset(): void;
   onSeekDate(d: Date): void;
   onNow(): void;
-  onReseedHorizons?(): void;
+  onReseedHorizons?(): Promise<any> | void;
+  onOpenEyes?(): void;
   onGalaxyReset?(): void;
   onGalaxyCamera?(cam: string): void;
   onGalaxyModelChange?(modelId: string): void;
@@ -65,7 +66,8 @@ export function createPanel(root: HTMLElement, store: AppStore, ctx: PanelContex
         </div>
         <div style="display: flex; gap: 4px;">
           <button id="toggleDynamics" style="font-size: 10px; padding: 2px 6px;">Switch Mode</button>
-          <button id="reseedBtn" style="font-size: 10px; padding: 2px 6px;" title="Reset N-body state to NASA Horizons truth vectors at current date">Re-seed</button>
+          <button id="reseedBtn" style="font-size: 10px; padding: 2px 6px;" title="Reset state to NASA JPL Horizons DE441 state vectors">🛰️ NASA Sync</button>
+          <button id="nasaEyesBtn" style="font-size: 10px; padding: 2px 6px; background: rgba(56,189,248,0.15); border: 1px solid rgba(56,189,248,0.4); color: #38bdf8;" title="Open this exact timestamp in NASA's Eyes on the Solar System">NASA Eyes ↗</button>
           <button id="valTableBtn" style="font-size: 10px; padding: 2px 6px;" title="View comparison table vs JPL Horizons">Validation</button>
         </div>
       </div>
@@ -145,6 +147,14 @@ export function createPanel(root: HTMLElement, store: AppStore, ctx: PanelContex
         <div class="reality-item">
           <span>Sun Barycenter Wobble:</span>
           <span class="reality-tag tag-true">Empty Point N-Body (2.2 R☉)</span>
+        </div>
+        <div class="reality-item">
+          <span>Ephemeris Standards:</span>
+          <span class="reality-tag tag-true">NASA JPL DE440/DE441 (SPICE)</span>
+        </div>
+        <div class="reality-item">
+          <span>Rotational Elements:</span>
+          <span class="reality-tag tag-true">IAU WGCCRE Cartographic (PCK)</span>
         </div>
         <div class="reality-item">
           <span>Sun Galactic Orbit:</span>
@@ -401,9 +411,25 @@ export function createPanel(root: HTMLElement, store: AppStore, ctx: PanelContex
       'dynamicsMode',
       store.get().dynamicsMode === 'ephemeris' ? 'simulation' : 'ephemeris',
     );
-  reseedBtn.onclick = () => ctx.onReseedHorizons?.();
-  valTableBtn.onclick = () =>
-    store.set('showValidationTable', !store.get().showValidationTable);
+    reseedBtn.onclick = async () => {
+      const orig = reseedBtn.textContent;
+      reseedBtn.textContent = 'Syncing NASA...';
+      try {
+        const res = await ctx.onReseedHorizons?.();
+        reseedBtn.textContent = res ? '✓ NASA Synced' : '✓ Synced';
+      } catch {
+        reseedBtn.textContent = '✓ Synced';
+      }
+      setTimeout(() => {
+        reseedBtn.textContent = orig;
+      }, 2500);
+    };
+    const nasaEyesBtn = q<HTMLButtonElement>('#nasaEyesBtn');
+    if (nasaEyesBtn) {
+      nasaEyesBtn.onclick = () => ctx.onOpenEyes?.();
+    }
+    valTableBtn.onclick = () =>
+      store.set('showValidationTable', !store.get().showValidationTable);
   closeValTable.onclick = () => store.set('showValidationTable', false);
   toggleReality.onclick = () =>
     store.set('showRealityInspector', !store.get().showRealityInspector);

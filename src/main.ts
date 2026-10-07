@@ -13,6 +13,7 @@ import { PRESETS } from '@/ui/presets';
 import { relativeRows } from '@/sim/readout';
 import { computeBodyFacts } from '@/sim/facts';
 import { GALAXY_MODELS } from '@/data/galaxy';
+import { horizonsClient } from '@/sim/horizonsClient';
 
 const HISTORY_CAP = 20_000;
 const MAX_JUMP_DAYS = 73_050;
@@ -165,8 +166,14 @@ const panel = createPanel(document.getElementById('panel')!, store, {
   onReset: () => client.reset(),
   onSeekDate: (d) => seekToJd(dateToJd(d)),
   onNow: () => seekToJd(dateToJd(new Date())),
-  onReseedHorizons: () => {
-    ephemeris.reseed(client.display.t, client.display);
+  onReseedHorizons: async () => {
+    return await ephemeris.reseedLive(client.display.t, client.display);
+  },
+  onOpenEyes: () => {
+    const curDate = jdToDate(model.epochJd + client.display.t);
+    const target = store.get().selected || 'home';
+    const eyesUrl = horizonsClient.getEyesUrl(curDate, target);
+    window.open(eyesUrl, '_blank');
   },
   onGalaxyReset: () => galaxySim.reset(),
   onGalaxyCamera: (cam) =>
