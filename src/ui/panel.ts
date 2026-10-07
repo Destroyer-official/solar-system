@@ -139,8 +139,16 @@ export function createPanel(root: HTMLElement, store: AppStore, ctx: PanelContex
           <span class="reality-tag tag-model">158 Globular Clusters</span>
         </div>
         <div class="reality-item">
+          <span>Sun Self-Rotation:</span>
+          <span class="reality-tag tag-true">IAU Pole 7.25° Tilt (25.38d)</span>
+        </div>
+        <div class="reality-item">
+          <span>Sun Barycenter Wobble:</span>
+          <span class="reality-tag tag-true">Empty Point N-Body (2.2 R☉)</span>
+        </div>
+        <div class="reality-item">
           <span>Sun Galactic Orbit:</span>
-          <span class="reality-tag tag-true">230 km/s (8.2 kpc)</span>
+          <span class="reality-tag tag-true">Curved 3D (230 km/s, 75 Myr z)</span>
         </div>
       </div>
 
@@ -483,20 +491,36 @@ export function createPanel(root: HTMLElement, store: AppStore, ctx: PanelContex
             <button id="closeFacts" style="padding:1px 6px;font-size:0.8em;">✕</button>
           </div>
           <div style="font-size:0.85em;line-height:1.45;margin-top:6px;">
-            <div><strong>Dist to Sun:</strong> ${sf.distSunAu.toFixed(4)} AU (${(sf.distSunAu * AU_KM).toLocaleString('en-US', { maximumFractionDigits: 0 })} km)</div>
-            <div><strong>Light Travel:</strong> ${sf.lightMinutes.toFixed(2)} light-min</div>
-            <div><strong>Orbital Speed:</strong> ${sf.speedKms.toFixed(2)} km/s</div>
-            <div><strong>Semi-major axis:</strong> ${sf.elements.a.toFixed(4)} AU</div>
-            <div><strong>Eccentricity:</strong> ${sf.elements.e.toFixed(4)}</div>
-            <div><strong>Orbital Period:</strong> ${sf.elements.period >= 365.25 ? `${(sf.elements.period / 365.25).toFixed(2)} yr` : `${sf.elements.period.toFixed(2)} days`}</div>
-            <div><strong>Axial Tilt:</strong> ${sf.axialTiltDeg.toFixed(2)}°</div>
-            <div><strong>Sidereal Day:</strong> ${sf.siderealDayDays.toFixed(2)} d</div>
-            <div><strong>Subsolar Point:</strong> ${sf.subsolarLatDeg.toFixed(1)}° lat, ${sf.subsolarLonDeg.toFixed(1)}° lon</div>
-            <div style="margin-top:4px;border-top:1px dashed rgba(255,255,255,0.15);padding-top:4px;">
-              ${Object.entries(sf.facts)
-                .map(([k, v]) => `<div><strong>${k}:</strong> ${v}</div>`)
-                .join('')}
-            </div>
+            ${
+              sf.id === 'sun'
+                ? `
+                <div><strong>Dist to SSB (Empty Point):</strong> ${sf.distSunAu.toFixed(6)} AU (${(sf.distSunAu * AU_KM).toLocaleString('en-US', { maximumFractionDigits: 0 })} km)</div>
+                <div><strong>Barycentric Wobble Speed:</strong> ${(sf.speedKms * 1000).toFixed(1)} m/s (${sf.speedKms.toFixed(3)} km/s)</div>
+                <div><strong>Axial Obliquity:</strong> 7.25° to ecliptic (RA 286.13°, Dec 63.87°)</div>
+                <div><strong>Carrington Sidereal Period:</strong> 25.38 days (14.1844°/day)</div>
+                <div style="margin-top:6px;border-top:1px dashed rgba(255,255,255,0.15);padding-top:6px;">
+                  ${Object.entries(sf.facts)
+                    .map(([k, v]) => `<div><strong>${k}:</strong> ${v}</div>`)
+                    .join('')}
+                </div>
+              `
+                : `
+                <div><strong>Dist to Sun:</strong> ${sf.distSunAu.toFixed(4)} AU (${(sf.distSunAu * AU_KM).toLocaleString('en-US', { maximumFractionDigits: 0 })} km)</div>
+                <div><strong>Light Travel:</strong> ${sf.lightMinutes.toFixed(2)} light-min</div>
+                <div><strong>Orbital Speed:</strong> ${sf.speedKms.toFixed(2)} km/s</div>
+                <div><strong>Semi-major axis:</strong> ${sf.elements.a.toFixed(4)} AU</div>
+                <div><strong>Eccentricity:</strong> ${sf.elements.e.toFixed(4)}</div>
+                <div><strong>Orbital Period:</strong> ${sf.elements.period >= 365.25 ? `${(sf.elements.period / 365.25).toFixed(2)} yr` : `${sf.elements.period.toFixed(2)} days`}</div>
+                <div><strong>Axial Tilt:</strong> ${sf.axialTiltDeg.toFixed(2)}°</div>
+                <div><strong>Sidereal Day:</strong> ${sf.siderealDayDays.toFixed(2)} d</div>
+                <div><strong>Subsolar Point:</strong> ${sf.subsolarLatDeg.toFixed(1)}° lat, ${sf.subsolarLonDeg.toFixed(1)}° lon</div>
+                <div style="margin-top:4px;border-top:1px dashed rgba(255,255,255,0.15);padding-top:4px;">
+                  ${Object.entries(sf.facts)
+                    .map(([k, v]) => `<div><strong>${k}:</strong> ${v}</div>`)
+                    .join('')}
+                </div>
+              `
+            }
           </div>
         `;
         const closeBtn = q<HTMLButtonElement>('#closeFacts');

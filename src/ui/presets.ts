@@ -66,6 +66,15 @@ export const PRESETS: Record<string, Preset> = {
     dist: 3.5,
     trailDays: 365.25,
   },
+  sunUnified: {
+    label: '☀️ Sun: 3 Unified Motions',
+    category: 'solar',
+    frame: 'barycentric',
+    focus: 'sun',
+    dir: [0, -0.85, 0.52],
+    dist: 0.022,
+    trailDays: 7305,
+  },
   wobble: {
     label: '⚖️ Sun Wobble (Barycenter)',
     category: 'solar',

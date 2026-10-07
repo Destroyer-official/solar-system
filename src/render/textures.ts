@@ -11,24 +11,89 @@ function createCanvas(width: number, height: number): [HTMLCanvasElement, Canvas
 }
 
 export function createSunTexture(): THREE.CanvasTexture {
-  const [canvas, ctx] = createCanvas(512, 256);
-  const grad = ctx.createLinearGradient(0, 0, 0, 256);
-  grad.addColorStop(0, '#ff9900');
-  grad.addColorStop(0.5, '#ffcc00');
-  grad.addColorStop(1, '#ff8800');
-  ctx.fillStyle = grad;
-  ctx.fillRect(0, 0, 512, 256);
+  const [canvas, ctx] = createCanvas(1024, 512);
 
-  // Solar granulation & turbulent flare spots
-  for (let i = 0; i < 2000; i++) {
-    const x = Math.random() * 512;
-    const y = Math.random() * 256;
-    const r = Math.random() * 4 + 1;
-    ctx.fillStyle = Math.random() > 0.4 ? '#ffee66' : '#e66600';
+  // 1. Solar Photosphere base: luminous golden gradient
+  const grad = ctx.createLinearGradient(0, 0, 0, 512);
+  grad.addColorStop(0, '#ff7700');
+  grad.addColorStop(0.2, '#ffaa00');
+  grad.addColorStop(0.5, '#ffd233');
+  grad.addColorStop(0.8, '#ffaa00');
+  grad.addColorStop(1, '#ff7700');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, 1024, 512);
+
+  // 2. Solar Convection Granulation: layered cellular pattern
+  for (let i = 0; i < 4500; i++) {
+    const x = Math.random() * 1024;
+    const y = Math.random() * 512;
+    const r = Math.random() * 4.5 + 1.2;
+    const roll = Math.random();
+    ctx.fillStyle = roll > 0.6 ? '#fff588' : roll > 0.25 ? '#ff9900' : '#cc5500';
     ctx.beginPath();
     ctx.arc(x, y, r, 0, Math.PI * 2);
     ctx.fill();
   }
+
+  // Helper to draw realistic bipolar sunspot groups with umbra, penumbra, and bright faculae
+  function drawSunspotGroup(cx: number, cy: number, scale: number) {
+    // Bright magnetic faculae / plage surrounding the active region
+    for (let i = 0; i < 28; i++) {
+      const fx = cx + (Math.random() - 0.5) * 60 * scale;
+      const fy = cy + (Math.random() - 0.5) * 30 * scale;
+      const fr = (Math.random() * 8 + 4) * scale;
+      ctx.fillStyle = 'rgba(255, 255, 200, 0.55)';
+      ctx.beginPath();
+      ctx.arc(fx, fy, fr, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // Leader sunspot: larger with penumbra and dark umbra
+    ctx.fillStyle = '#6b2e04'; // Penumbra
+    ctx.beginPath();
+    ctx.ellipse(cx, cy, 14 * scale, 10 * scale, 0.2, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = '#140400'; // Deep dark Umbra
+    ctx.beginPath();
+    ctx.ellipse(cx, cy, 7 * scale, 5 * scale, 0.2, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Follower sunspot: displaced in longitude with opposite magnetic polarity
+    const fx = cx + 24 * scale;
+    const fy = cy + (Math.random() - 0.5) * 8 * scale;
+    ctx.fillStyle = '#7a3406'; // Penumbra
+    ctx.beginPath();
+    ctx.ellipse(fx, fy, 9 * scale, 6.5 * scale, -0.3, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = '#140400'; // Umbra
+    ctx.beginPath();
+    ctx.ellipse(fx, fy, 4.5 * scale, 3 * scale, -0.3, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Satellite pore spots
+    for (let i = 0; i < 4; i++) {
+      const px = cx + (Math.random() - 0.5) * 45 * scale;
+      const py = cy + (Math.random() - 0.5) * 20 * scale;
+      ctx.fillStyle = '#220800';
+      ctx.beginPath();
+      ctx.arc(px, py, (Math.random() * 2 + 1.2) * scale, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  // 3. Prominent active sunspot groups at typical solar activity latitudes (±15° to ±25°)
+  // Latitude +18°: y ≈ 512 * (90 - 18)/180 = 205
+  drawSunspotGroup(280, 205, 1.3);
+  drawSunspotGroup(780, 215, 1.1);
+
+  // Latitude -22°: y ≈ 512 * (90 - (-22))/180 = 318
+  drawSunspotGroup(450, 318, 1.4);
+  drawSunspotGroup(920, 310, 0.9);
+
+  // Latitude +12°: y ≈ 512 * (90 - 12)/180 = 222
+  drawSunspotGroup(120, 222, 1.0);
 
   const tex = new THREE.CanvasTexture(canvas);
   tex.wrapS = THREE.RepeatWrapping;

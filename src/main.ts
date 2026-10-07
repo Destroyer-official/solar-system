@@ -100,6 +100,9 @@ function applyPreset(id: string): void {
   if (id === 'oort') {
     store.set('showOortCloud', true);
   }
+  if (id === 'sunUnified' || id === 'wobble') {
+    store.set('selected', 'sun');
+  }
   viewPreset(id);
 }
 

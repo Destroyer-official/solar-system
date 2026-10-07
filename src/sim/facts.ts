@@ -31,6 +31,60 @@ export function computeBodyFacts(
   const rot = physical?.rotation;
   const daysSinceJ2000 = model.epochJd - 2451545.0 + state.t;
 
+  if (id === 'sun') {
+    // Sun's motion relative to Solar System Barycenter (the simulation origin [0,0,0])
+    const sx = state.pos[3 * sun]!;
+    const sy = state.pos[3 * sun + 1]!;
+    const sz = state.pos[3 * sun + 2]!;
+    const distBaryAu = Math.hypot(sx, sy, sz);
+    const distBaryKm = distBaryAu * AU_KM;
+    const sunRadiusKm = model.radiusKm[sun] || 695700;
+    const rSolar = distBaryKm / sunRadiusKm;
+
+    const svx = state.vel[3 * sun]!;
+    const svy = state.vel[3 * sun + 1]!;
+    const svz = state.vel[3 * sun + 2]!;
+    const speedKms = auDayToKms(Math.hypot(svx, svy, svz));
+    const speedMs = speedKms * 1000;
+
+    const rotRate = rot?.wRateDegPerDay ?? 14.1844;
+    const rotAngleDeg = (((rot?.w0Deg ?? 84.176) + rotRate * daysSinceJ2000) % 360 + 360) % 360;
+    const carringtonNo = Math.floor(1958 + daysSinceJ2000 / 27.2753);
+
+    return {
+      id: 'sun',
+      name: 'Sun (Sol) - 3 Unified Motions',
+      distSunAu: distBaryAu, // Shows distance to Solar System Barycenter
+      lightMinutes: distBaryAu * (AU_KM / 299792.458 / 60),
+      speedKms,
+      elements: {
+        a: distBaryAu,
+        e: 0.1,
+        inc: 7.25 * (Math.PI / 180),
+        node: 75.76 * (Math.PI / 180),
+        argPeri: 0,
+        meanAnom: rotAngleDeg * (Math.PI / 180),
+        period: 7254, // ~19.86 yr Jupiter-Saturn synodic cycle
+      },
+      axialTiltDeg: 7.25,
+      siderealDayDays: 360 / rotRate,
+      subsolarLatDeg: 0,
+      subsolarLonDeg: rotAngleDeg,
+      facts: {
+        '☀️ Motion 1: Self-Rotation': `${rotRate.toFixed(4)}°/day (${(360 / rotRate).toFixed(2)} d sidereal, 7.25° tilt to ecliptic)`,
+        'Carrington Cycle': `CR ${carringtonNo} (Prime Meridian W = ${rotAngleDeg.toFixed(1)}°)`,
+        'Differential Rotation': 'Equator: 24.47 d (14.71°/d) | Poles: 34.15 d (10.54°/d)',
+        '⚖️ Motion 2: SSB Wobble': `${distBaryKm.toLocaleString('en-US', { maximumFractionDigits: 0 })} km (${rSolar.toFixed(2)} R☉) ${rSolar > 1.0 ? 'OUTSIDE Surface (in empty space)' : 'INSIDE Physical Sun'}`,
+        'Wobble Speed': `${speedMs.toFixed(1)} m/s (${speedKms.toFixed(3)} km/s around Barycenter)`,
+        'Gravitational Drivers': 'Jupiter (~61%), Saturn (~27%), Neptune (~7%), Uranus (~5%)',
+        'Harmonic Cycles': '19.86 yr (J-S beat), 60 yr (trefoil loop), 178.7 yr (Charvátová)',
+        '🌌 Motion 3: Galactic Orbit': 'R₀ ≈ 8.18 kpc (26,700 ly) from Sgr A*, V₀ ≈ 230 km/s',
+        'Vertical Oscillation': 'z ≈ +20.8 pc (+67.8 ly), P_z ≈ 75 Myr (harmonic bobbing)',
+        'Galactic Cosmic Year': '~230 Million Years per Milky Way revolution',
+      },
+    };
+  }
+
   // Body relative to Sun
   const rx = state.pos[3 * i]! - state.pos[3 * sun]!;
   const ry = state.pos[3 * i + 1]! - state.pos[3 * sun + 1]!;

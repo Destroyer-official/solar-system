@@ -13,6 +13,7 @@ import { createStarfield } from './starfield';
 import { Trail } from './trail';
 import { GalaxyVisual } from './galaxyVisual';
 import { OortCloudVisual } from './oortCloud';
+import { BarycenterVisual } from './barycenterVisual';
 import type { GalacticOrbitState } from '@/physics/galacticPotential';
 
 const MIN_PIXEL_RADIUS = 4;
@@ -138,17 +139,9 @@ export function createViewer(
   });
   const trailData = trails.map((t) => t.data);
 
-  // Barycenter marker
-  const baryAttr = new THREE.BufferAttribute(new Float32Array(3), 3);
-  baryAttr.setUsage(THREE.DynamicDrawUsage);
-  const baryGeom = new THREE.BufferGeometry();
-  baryGeom.setAttribute('position', baryAttr);
-  const bary = new THREE.Points(
-    baryGeom,
-    new THREE.PointsMaterial({ color: 0xffffff, size: 8, sizeAttenuation: false }),
-  );
-  bary.frustumCulled = false;
-  scene.add(bary);
+  // Solar System Barycenter (SSB) - the "empty point" around which the Sun wobbles
+  const baryVisual = new BarycenterVisual();
+  scene.add(baryVisual.group);
 
   // Galaxy visual
   const galaxyVisual = new GalaxyVisual();
@@ -201,7 +194,6 @@ export function createViewer(
     // Unified cosmological scene: all celestial bodies, moons, and Milky Way active
     for (const vis of visuals) vis.group.visible = true;
     sunLight.visible = true;
-    bary.visible = true;
 
     const ax = v.frame.axes;
     v.frame.origin(s.t, s.gm, s.pos, 0, o);
@@ -336,8 +328,11 @@ export function createViewer(
 
     mapPoint(ax, o, 0, 0, 0, p);
     squash(v.frame.travelDir, v.compress ?? 1, p[0]! - f[0]!, p[1]! - f[1]!, p[2]! - f[2]!, w);
-    baryAttr.setXYZ(0, w[0]!, w[1]!, w[2]!);
-    baryAttr.needsUpdate = true;
+    const baryPos = new THREE.Vector3(w[0]!, w[1]!, w[2]!);
+    const sunPos = visuals[0]!.group.position;
+    // Show the "empty point" Solar System Barycenter when labels are enabled, or in barycentric frame / wobble view
+    const showBary = v.showLabels !== false || v.focus === -1 || v.frame.id === 'barycentric';
+    baryVisual.update(baryPos, sunPos, camera, height, showBary);
 
     const focusId = v.focus >= 0 ? model.ids[v.focus] : undefined;
     const focusParent = focusId
